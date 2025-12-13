@@ -252,4 +252,224 @@ class TextsController extends BaseController
         $_SESSION['flash'][] = ['type' => 'success', 'message' => "Seeded {$added} new translations."];
         return $response->withHeader('Location', $this->redirect('/admin/texts'))->withStatus(302);
     }
+
+    /**
+     * Get available language files
+     */
+    public function languages(Request $request, Response $response): Response
+    {
+        $translationsDir = dirname(__DIR__, 3) . '/storage/translations';
+        $languages = [];
+
+        if (is_dir($translationsDir)) {
+            foreach (glob($translationsDir . '/*.json') as $file) {
+                $content = @file_get_contents($file);
+                if ($content) {
+                    $data = json_decode($content, true);
+                    $meta = $data['_meta'] ?? [];
+                    $languages[] = [
+                        'code' => $meta['code'] ?? pathinfo($file, PATHINFO_FILENAME),
+                        'name' => $meta['language'] ?? pathinfo($file, PATHINFO_FILENAME),
+                        'file' => basename($file),
+                        'version' => $meta['version'] ?? '1.0.0'
+                    ];
+                }
+            }
+        }
+
+        $response->getBody()->write(json_encode(['languages' => $languages]));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    /**
+     * Import translations from a preset JSON file
+     */
+    public function import(Request $request, Response $response): Response
+    {
+        $data = (array)$request->getParsedBody();
+        $csrf = (string)($data['csrf'] ?? '');
+
+        if (!isset($_SESSION['csrf']) || !hash_equals($_SESSION['csrf'], $csrf)) {
+            $_SESSION['flash'][] = ['type' => 'danger', 'message' => 'Invalid CSRF token.'];
+            return $response->withHeader('Location', $this->redirect('/admin/texts'))->withStatus(302);
+        }
+
+        $langCode = trim((string)($data['language'] ?? ''));
+        $mode = (string)($data['mode'] ?? 'merge'); // merge or replace
+
+        if ($langCode === '') {
+            $_SESSION['flash'][] = ['type' => 'danger', 'message' => 'Please select a language.'];
+            return $response->withHeader('Location', $this->redirect('/admin/texts'))->withStatus(302);
+        }
+
+        // Sanitize language code to prevent path traversal
+        $langCode = preg_replace('/[^a-z0-9_-]/i', '', $langCode);
+        $filePath = dirname(__DIR__, 3) . '/storage/translations/' . $langCode . '.json';
+
+        if (!file_exists($filePath)) {
+            $_SESSION['flash'][] = ['type' => 'danger', 'message' => 'Language file not found.'];
+            return $response->withHeader('Location', $this->redirect('/admin/texts'))->withStatus(302);
+        }
+
+        $result = $this->importFromJsonFile($filePath, $mode);
+
+        $_SESSION['flash'][] = [
+            'type' => 'success',
+            'message' => "Imported {$result['added']} new, updated {$result['updated']} existing translations."
+        ];
+        return $response->withHeader('Location', $this->redirect('/admin/texts'))->withStatus(302);
+    }
+
+    /**
+     * Upload and import a custom JSON file
+     */
+    public function upload(Request $request, Response $response): Response
+    {
+        $data = (array)$request->getParsedBody();
+        $csrf = (string)($data['csrf'] ?? '');
+
+        if (!isset($_SESSION['csrf']) || !hash_equals($_SESSION['csrf'], $csrf)) {
+            $_SESSION['flash'][] = ['type' => 'danger', 'message' => 'Invalid CSRF token.'];
+            return $response->withHeader('Location', $this->redirect('/admin/texts'))->withStatus(302);
+        }
+
+        $uploadedFiles = $request->getUploadedFiles();
+        $uploadedFile = $uploadedFiles['json_file'] ?? null;
+
+        if (!$uploadedFile || $uploadedFile->getError() !== UPLOAD_ERR_OK) {
+            $_SESSION['flash'][] = ['type' => 'danger', 'message' => 'Please upload a valid JSON file.'];
+            return $response->withHeader('Location', $this->redirect('/admin/texts'))->withStatus(302);
+        }
+
+        // Check file extension
+        $filename = $uploadedFile->getClientFilename();
+        if (strtolower(pathinfo($filename, PATHINFO_EXTENSION)) !== 'json') {
+            $_SESSION['flash'][] = ['type' => 'danger', 'message' => 'Only JSON files are allowed.'];
+            return $response->withHeader('Location', $this->redirect('/admin/texts'))->withStatus(302);
+        }
+
+        // Save to temp and import
+        $tempPath = sys_get_temp_dir() . '/' . uniqid('translation_') . '.json';
+        $uploadedFile->moveTo($tempPath);
+
+        // Validate JSON
+        $content = file_get_contents($tempPath);
+        $jsonData = json_decode($content, true);
+
+        if ($jsonData === null) {
+            unlink($tempPath);
+            $_SESSION['flash'][] = ['type' => 'danger', 'message' => 'Invalid JSON file.'];
+            return $response->withHeader('Location', $this->redirect('/admin/texts'))->withStatus(302);
+        }
+
+        $mode = (string)($data['mode'] ?? 'merge');
+        $result = $this->importFromJsonFile($tempPath, $mode);
+
+        // Optionally save to storage/translations
+        $saveFile = !empty($data['save_file']);
+        if ($saveFile && isset($jsonData['_meta']['code'])) {
+            $langCode = preg_replace('/[^a-z0-9_-]/i', '', $jsonData['_meta']['code']);
+            $destPath = dirname(__DIR__, 3) . '/storage/translations/' . $langCode . '.json';
+            copy($tempPath, $destPath);
+        }
+
+        unlink($tempPath);
+
+        $_SESSION['flash'][] = [
+            'type' => 'success',
+            'message' => "Imported {$result['added']} new, updated {$result['updated']} existing translations."
+        ];
+        return $response->withHeader('Location', $this->redirect('/admin/texts'))->withStatus(302);
+    }
+
+    /**
+     * Export current translations as JSON
+     */
+    public function export(Request $request, Response $response): Response
+    {
+        $grouped = $this->translations->allGrouped();
+
+        $export = [
+            '_meta' => [
+                'language' => 'Custom',
+                'code' => 'custom',
+                'version' => '1.0.0',
+                'exported_at' => date('Y-m-d H:i:s')
+            ]
+        ];
+
+        foreach ($grouped as $context => $texts) {
+            $export[$context] = [];
+            foreach ($texts as $text) {
+                $export[$context][$text['text_key']] = $text['text_value'];
+            }
+        }
+
+        $json = json_encode($export, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        $response->getBody()->write($json);
+        return $response
+            ->withHeader('Content-Type', 'application/json')
+            ->withHeader('Content-Disposition', 'attachment; filename="translations-' . date('Y-m-d') . '.json"');
+    }
+
+    /**
+     * Import translations from a JSON file path
+     */
+    private function importFromJsonFile(string $filePath, string $mode = 'merge'): array
+    {
+        $content = file_get_contents($filePath);
+        $data = json_decode($content, true);
+
+        if (!$data) {
+            return ['added' => 0, 'updated' => 0];
+        }
+
+        $added = 0;
+        $updated = 0;
+
+        // If mode is replace, delete all existing translations first
+        if ($mode === 'replace') {
+            $this->db->pdo()->exec('DELETE FROM frontend_texts');
+        }
+
+        foreach ($data as $context => $translations) {
+            if ($context === '_meta') {
+                continue;
+            }
+
+            if (!is_array($translations)) {
+                continue;
+            }
+
+            foreach ($translations as $key => $value) {
+                if (!is_string($value)) {
+                    continue;
+                }
+
+                $existing = $this->translations->findByKey($key);
+
+                if ($existing) {
+                    if ($mode !== 'skip') {
+                        $this->translations->update($existing['id'], [
+                            'text_value' => $value,
+                            'context' => $context,
+                            'description' => $existing['description']
+                        ]);
+                        $updated++;
+                    }
+                } else {
+                    $this->translations->create([
+                        'text_key' => $key,
+                        'text_value' => $value,
+                        'context' => $context,
+                        'description' => ''
+                    ]);
+                    $added++;
+                }
+            }
+        }
+
+        return ['added' => $added, 'updated' => $updated];
+    }
 }

@@ -413,6 +413,22 @@ $app->post('/admin/texts/seed', function (Request $request, Response $response) 
     $controller = new \App\Controllers\Admin\TextsController($container['db'], Twig::fromRequest($request));
     return $controller->seed($request, $response);
 })->add($container['db'] ? new AuthMiddleware($container['db']) : function($request, $handler) { return $handler->handle($request); });
+$app->get('/admin/texts/languages', function (Request $request, Response $response) use ($container) {
+    $controller = new \App\Controllers\Admin\TextsController($container['db'], Twig::fromRequest($request));
+    return $controller->languages($request, $response);
+})->add($container['db'] ? new AuthMiddleware($container['db']) : function($request, $handler) { return $handler->handle($request); });
+$app->post('/admin/texts/import', function (Request $request, Response $response) use ($container) {
+    $controller = new \App\Controllers\Admin\TextsController($container['db'], Twig::fromRequest($request));
+    return $controller->import($request, $response);
+})->add($container['db'] ? new AuthMiddleware($container['db']) : function($request, $handler) { return $handler->handle($request); });
+$app->post('/admin/texts/upload', function (Request $request, Response $response) use ($container) {
+    $controller = new \App\Controllers\Admin\TextsController($container['db'], Twig::fromRequest($request));
+    return $controller->upload($request, $response);
+})->add($container['db'] ? new AuthMiddleware($container['db']) : function($request, $handler) { return $handler->handle($request); });
+$app->get('/admin/texts/export', function (Request $request, Response $response) use ($container) {
+    $controller = new \App\Controllers\Admin\TextsController($container['db'], Twig::fromRequest($request));
+    return $controller->export($request, $response);
+})->add($container['db'] ? new AuthMiddleware($container['db']) : function($request, $handler) { return $handler->handle($request); });
 $app->get('/admin/texts/{id}/edit', function (Request $request, Response $response, array $args) use ($container) {
     $controller = new \App\Controllers\Admin\TextsController($container['db'], Twig::fromRequest($request));
     return $controller->edit($request, $response, $args);

@@ -7,6 +7,9 @@
       <p class="text-gray-600 mt-1">Manage all translatable texts for the frontend</p>
     </div>
     <div class="flex gap-2">
+      <a href="{{ base_path }}/admin/texts/export" class="btn-secondary">
+        <i class="fas fa-download mr-2"></i>Export JSON
+      </a>
       <form action="{{ base_path }}/admin/texts/seed" method="post" class="inline">
         <input type="hidden" name="csrf" value="{{ csrf }}">
         <button type="submit" class="btn-secondary" onclick="return confirm('Add missing default translations?')">
@@ -16,6 +19,71 @@
       <a href="{{ base_path }}/admin/texts/create" class="btn-primary">
         <i class="fas fa-plus mr-2"></i>Add Text
       </a>
+    </div>
+  </div>
+
+  {# Import/Upload translations card #}
+  <div class="card mb-6">
+    <div class="card-header bg-blue-50 border-b border-blue-200">
+      <h2 class="text-lg font-semibold text-blue-800 flex items-center">
+        <i class="fas fa-language mr-2"></i>Import Translations
+      </h2>
+    </div>
+    <div class="p-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {# Import from preset #}
+        <div>
+          <h3 class="text-sm font-medium text-gray-700 mb-3">Import from Preset Language</h3>
+          <form action="{{ base_path }}/admin/texts/import" method="post" class="space-y-3">
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <div class="flex gap-2">
+              <select name="language" id="language-select" class="input flex-1">
+                <option value="">Select language...</option>
+              </select>
+              <select name="mode" class="input w-32">
+                <option value="merge">Merge</option>
+                <option value="replace">Replace All</option>
+                <option value="skip">Skip Existing</option>
+              </select>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="submit" class="btn-primary">
+                <i class="fas fa-file-import mr-2"></i>Import
+              </button>
+              <span class="text-xs text-gray-500">
+                <strong>Merge:</strong> Update existing + add new |
+                <strong>Replace:</strong> Delete all, import fresh |
+                <strong>Skip:</strong> Only add new keys
+              </span>
+            </div>
+          </form>
+        </div>
+
+        {# Upload custom JSON #}
+        <div>
+          <h3 class="text-sm font-medium text-gray-700 mb-3">Upload Custom JSON File</h3>
+          <form action="{{ base_path }}/admin/texts/upload" method="post" enctype="multipart/form-data" class="space-y-3">
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <div class="flex gap-2">
+              <input type="file" name="json_file" accept=".json" class="input flex-1 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
+              <select name="mode" class="input w-32">
+                <option value="merge">Merge</option>
+                <option value="replace">Replace All</option>
+                <option value="skip">Skip Existing</option>
+              </select>
+            </div>
+            <div class="flex items-center gap-4">
+              <label class="flex items-center text-sm text-gray-600">
+                <input type="checkbox" name="save_file" value="1" class="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                Save as preset language
+              </label>
+              <button type="submit" class="btn-primary">
+                <i class="fas fa-upload mr-2"></i>Upload & Import
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -137,67 +205,105 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Inline editing functionality
-      document.querySelectorAll('.edit-inline-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-          const row = this.closest('tr');
+      // Load available languages for the dropdown
+      async function loadLanguages() {
+        try {
+          const response = await fetch('{{ base_path }}/admin/texts/languages');
+          const data = await response.json();
+          const select = document.getElementById('language-select');
+
+          if (data.languages && data.languages.length > 0) {
+            data.languages.forEach(lang => {
+              const option = document.createElement('option');
+              option.value = lang.code;
+              option.textContent = `${lang.name} (${lang.code}) - v${lang.version}`;
+              select.appendChild(option);
+            });
+          } else {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No preset languages available';
+            option.disabled = true;
+            select.appendChild(option);
+          }
+        } catch (error) {
+          console.error('Failed to load languages:', error);
+        }
+      }
+
+      loadLanguages();
+
+      // Inline editing functionality - using event delegation for reliability
+      document.addEventListener('click', function(e) {
+        // Quick Edit button
+        if (e.target.closest('.edit-inline-btn')) {
+          e.preventDefault();
+          const btn = e.target.closest('.edit-inline-btn');
+          const row = btn.closest('tr');
           const container = row.querySelector('.inline-edit-container');
-          const textValue = container.querySelector('.text-value');
-          const textInput = container.querySelector('.text-input');
-          const editActions = container.querySelector('.edit-actions');
+          if (container) {
+            const textValue = container.querySelector('.text-value');
+            const textInput = container.querySelector('.text-input');
+            const editActions = container.querySelector('.edit-actions');
 
-          textValue.classList.add('hidden');
-          textInput.classList.remove('hidden');
-          editActions.classList.remove('hidden');
-          textInput.focus();
-        });
-      });
+            textValue.classList.add('hidden');
+            textInput.classList.remove('hidden');
+            editActions.classList.remove('hidden');
+            textInput.focus();
+          }
+        }
 
-      document.querySelectorAll('.cancel-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-          const container = this.closest('.inline-edit-container');
-          const textValue = container.querySelector('.text-value');
-          const textInput = container.querySelector('.text-input');
-          const editActions = container.querySelector('.edit-actions');
+        // Cancel button
+        if (e.target.closest('.cancel-btn')) {
+          e.preventDefault();
+          const container = e.target.closest('.inline-edit-container');
+          if (container) {
+            const textValue = container.querySelector('.text-value');
+            const textInput = container.querySelector('.text-input');
+            const editActions = container.querySelector('.edit-actions');
 
-          textInput.value = textValue.textContent;
-          textValue.classList.remove('hidden');
-          textInput.classList.add('hidden');
-          editActions.classList.add('hidden');
-        });
-      });
+            textInput.value = textValue.textContent;
+            textValue.classList.remove('hidden');
+            textInput.classList.add('hidden');
+            editActions.classList.add('hidden');
+          }
+        }
 
-      document.querySelectorAll('.save-btn').forEach(btn => {
-        btn.addEventListener('click', async function() {
-          const container = this.closest('.inline-edit-container');
-          const id = container.dataset.id;
-          const textValue = container.querySelector('.text-value');
-          const textInput = container.querySelector('.text-input');
-          const editActions = container.querySelector('.edit-actions');
+        // Save button
+        if (e.target.closest('.save-btn')) {
+          e.preventDefault();
+          const btn = e.target.closest('.save-btn');
+          const container = btn.closest('.inline-edit-container');
+          if (container) {
+            const id = container.dataset.id;
+            const textValue = container.querySelector('.text-value');
+            const textInput = container.querySelector('.text-input');
+            const editActions = container.querySelector('.edit-actions');
 
-          try {
-            const response = await fetch(`{{ base_path }}/admin/texts/${id}/inline`, {
+            fetch(`{{ base_path }}/admin/texts/${id}/inline`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-Token': '{{ csrf }}'
               },
               body: JSON.stringify({ text_value: textInput.value })
+            })
+            .then(response => response.json())
+            .then(result => {
+              if (result.success) {
+                textValue.textContent = textInput.value;
+                textValue.classList.remove('hidden');
+                textInput.classList.add('hidden');
+                editActions.classList.add('hidden');
+              } else {
+                alert('Failed to save: ' + (result.error || 'Unknown error'));
+              }
+            })
+            .catch(error => {
+              alert('Failed to save: ' + error.message);
             });
-
-            const result = await response.json();
-            if (result.success) {
-              textValue.textContent = textInput.value;
-              textValue.classList.remove('hidden');
-              textInput.classList.add('hidden');
-              editActions.classList.add('hidden');
-            } else {
-              alert('Failed to save: ' + (result.error || 'Unknown error'));
-            }
-          } catch (error) {
-            alert('Failed to save: ' + error.message);
           }
-        });
+        }
       });
     });
   </script>
