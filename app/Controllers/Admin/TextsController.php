@@ -201,7 +201,7 @@ class TextsController extends BaseController
         }
 
         $id = (int)($args['id'] ?? 0);
-        $data = (array)$request->getParsedBody();
+        $data = json_decode((string)$request->getBody(), true) ?: [];
 
         $text = $this->translations->find($id);
         if (!$text) {
