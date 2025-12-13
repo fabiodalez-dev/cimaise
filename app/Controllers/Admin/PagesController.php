@@ -76,7 +76,7 @@ class PagesController extends BaseController
         $data = (array)$request->getParsedBody();
         $csrf = (string)($data['csrf'] ?? '');
 
-        if (!is_string($csrf) || !isset($_SESSION['csrf']) || !hash_equals($_SESSION['csrf'], $csrf)) {
+        if (!isset($_SESSION['csrf']) || !hash_equals($_SESSION['csrf'], $csrf)) {
             $_SESSION['flash'][] = ['type' => 'danger', 'message' => 'Invalid CSRF token.'];
             return $response->withHeader('Location', $this->redirect('/admin/pages/home'))->withStatus(302);
         }
@@ -126,7 +126,7 @@ class PagesController extends BaseController
         $data = (array)$request->getParsedBody();
         $csrf = (string)($data['csrf'] ?? '');
 
-        if (!is_string($csrf) || !isset($_SESSION['csrf']) || !hash_equals($_SESSION['csrf'], $csrf)) {
+        if (!isset($_SESSION['csrf']) || !hash_equals($_SESSION['csrf'], $csrf)) {
             $_SESSION['flash'][] = ['type' => 'danger', 'message' => 'Invalid CSRF token.'];
             return $response->withHeader('Location', $this->redirect('/admin/pages/about'))->withStatus(302);
         }
@@ -207,7 +207,7 @@ class PagesController extends BaseController
             }
         }
 
-        $_SESSION['flash'][] = ['type' => 'success', 'message' => 'About page saved'];
+        $_SESSION['flash'][] = ['type' => 'success', 'message' => 'About page saved successfully.'];
         return $response->withHeader('Location', $this->redirect('/admin/pages/about'))->withStatus(302);
     }
 
@@ -254,7 +254,7 @@ class PagesController extends BaseController
         $data = (array)$request->getParsedBody();
         $csrf = (string)($data['csrf'] ?? '');
 
-        if (!is_string($csrf) || !isset($_SESSION['csrf']) || !hash_equals($_SESSION['csrf'], $csrf)) {
+        if (!isset($_SESSION['csrf']) || !hash_equals($_SESSION['csrf'], $csrf)) {
             $_SESSION['flash'][] = ['type' => 'danger', 'message' => 'Invalid CSRF token.'];
             return $response->withHeader('Location', $this->redirect('/admin/pages/galleries'))->withStatus(302);
         }
@@ -281,7 +281,7 @@ class PagesController extends BaseController
         // Default gallery template selector moved to global Settings page.
         // Intentionally ignore any incoming default_template_id here to keep a single source of truth.
 
-        $_SESSION['flash'][] = ['type' => 'success', 'message' => 'Galleries page saved'];
+        $_SESSION['flash'][] = ['type' => 'success', 'message' => 'Galleries page saved successfully.'];
         return $response->withHeader('Location', $this->redirect('/admin/pages/galleries'))->withStatus(302);
     }
 
