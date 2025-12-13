@@ -62,6 +62,8 @@ class TextsController extends BaseController
 
     /**
      * Edit a single text
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function edit(Request $request, Response $response, array $args): Response
     {
@@ -114,6 +116,8 @@ class TextsController extends BaseController
 
     /**
      * Show create form
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function create(Request $request, Response $response): Response
     {
@@ -255,6 +259,8 @@ class TextsController extends BaseController
 
     /**
      * Get available language files
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function languages(Request $request, Response $response): Response
     {
@@ -384,6 +390,8 @@ class TextsController extends BaseController
 
     /**
      * Export current translations as JSON
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function export(Request $request, Response $response): Response
     {
@@ -425,49 +433,73 @@ class TextsController extends BaseController
             return ['added' => 0, 'updated' => 0];
         }
 
-        $added = 0;
-        $updated = 0;
-
-        // If mode is replace, delete all existing translations first
-        if ($mode === 'replace') {
-            $this->db->pdo()->exec('DELETE FROM frontend_texts');
+        // Normalize mode to valid values
+        $validModes = ['merge', 'replace', 'skip'];
+        if (!\in_array($mode, $validModes, true)) {
+            $mode = 'merge';
         }
 
-        foreach ($data as $context => $translations) {
-            if ($context === '_meta') {
-                continue;
+        $added = 0;
+        $updated = 0;
+        $pdo = $this->db->pdo();
+
+        // Wrap entire operation in transaction for data consistency
+        $pdo->beginTransaction();
+
+        try {
+            // If mode is replace, delete all existing translations first
+            if ($mode === 'replace') {
+                $pdo->exec('DELETE FROM frontend_texts');
             }
 
-            if (!is_array($translations)) {
-                continue;
-            }
-
-            foreach ($translations as $key => $value) {
-                if (!is_string($value)) {
+            foreach ($data as $context => $translations) {
+                if ($context === '_meta') {
                     continue;
                 }
 
-                $existing = $this->translations->findByKey($key);
+                if (!\is_array($translations)) {
+                    continue;
+                }
 
-                if ($existing) {
-                    if ($mode !== 'skip') {
-                        $this->translations->update($existing['id'], [
+                // Sanitize context: alphanumeric, underscore, hyphen only, max 50 chars
+                $context = preg_replace('/[^a-z0-9_-]/i', '', (string)$context);
+                $context = mb_substr($context, 0, 50);
+                if ($context === '') {
+                    $context = 'general';
+                }
+
+                foreach ($translations as $key => $value) {
+                    if (!\is_string($value)) {
+                        continue;
+                    }
+
+                    $existing = $this->translations->findByKey($key);
+
+                    if ($existing) {
+                        if ($mode !== 'skip') {
+                            $this->translations->update($existing['id'], [
+                                'text_value' => $value,
+                                'context' => $context,
+                                'description' => $existing['description']
+                            ]);
+                            $updated++;
+                        }
+                    } else {
+                        $this->translations->create([
+                            'text_key' => $key,
                             'text_value' => $value,
                             'context' => $context,
-                            'description' => $existing['description']
+                            'description' => ''
                         ]);
-                        $updated++;
+                        $added++;
                     }
-                } else {
-                    $this->translations->create([
-                        'text_key' => $key,
-                        'text_value' => $value,
-                        'context' => $context,
-                        'description' => ''
-                    ]);
-                    $added++;
                 }
             }
+
+            $pdo->commit();
+        } catch (\Exception $e) {
+            $pdo->rollBack();
+            throw $e;
         }
 
         return ['added' => $added, 'updated' => $updated];

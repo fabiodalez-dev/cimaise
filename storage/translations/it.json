@@ -30,7 +30,13 @@
     "filter.sort": "Ordina",
     "filter.process": "Processo",
     "filter.apply": "Applica",
-    "filter.filter_images": "Filtra immagini:"
+    "filter.filter_images": "Filtra immagini:",
+    "filter.sort_latest": "Più recenti",
+    "filter.sort_oldest": "Meno recenti",
+    "filter.sort_title_asc": "Titolo A-Z",
+    "filter.sort_title_desc": "Titolo Z-A",
+    "filter.sort_date_new": "Data scatto (recenti)",
+    "filter.sort_date_old": "Data scatto (vecchi)"
   },
   "album": {
     "album.photos": "Foto",

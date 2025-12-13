@@ -25,7 +25,18 @@
     "filter.search": "Search",
     "filter.clear": "Clear filters",
     "filter.no_results": "No results found",
-    "filter.results_count": "{count} results"
+    "filter.results_count": "{count} results",
+    "filter.film": "Film",
+    "filter.sort": "Sort",
+    "filter.process": "Process",
+    "filter.apply": "Apply",
+    "filter.filter_images": "Filter images:",
+    "filter.sort_latest": "Latest First",
+    "filter.sort_oldest": "Oldest First",
+    "filter.sort_title_asc": "Title A-Z",
+    "filter.sort_title_desc": "Title Z-A",
+    "filter.sort_date_new": "Shoot Date (New)",
+    "filter.sort_date_old": "Shoot Date (Old)"
   },
   "album": {
     "album.photos": "Photos",
@@ -44,6 +55,9 @@
     "album.lens": "Lens",
     "album.settings": "Settings",
     "album.empty": "This gallery is empty",
+    "album.empty_message": "Images will appear here once uploaded.",
+    "album.equipment": "Equipment",
+    "album.more_from": "More from {category}",
     "album.private": "Private Gallery",
     "album.password_protected": "Password Protected",
     "album.enter_password": "Enter Password",
@@ -129,7 +143,8 @@
     "contact.success": "Message sent successfully!",
     "contact.error": "Failed to send message. Please try again.",
     "contact.required": "This field is required",
-    "contact.invalid_email": "Please enter a valid email address"
+    "contact.invalid_email": "Please enter a valid email address",
+    "contact.intro": "For collaborations and commissions, contact me via email or social."
   },
   "meta": {
     "meta.home_title": "Photography Portfolio",

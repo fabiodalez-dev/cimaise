@@ -191,12 +191,12 @@
             {{ trans('filter.sort', {}, 'Sort') }}
           </label>
           <select id="filter-sort" class="filter-select">
-            <option value="published_desc" {% if active_filters.sort == 'published_desc' %}selected{% endif %}>Latest First</option>
-            <option value="published_asc" {% if active_filters.sort == 'published_asc' %}selected{% endif %}>Oldest First</option>
-            <option value="title_asc" {% if active_filters.sort == 'title_asc' %}selected{% endif %}>Title A-Z</option>
-            <option value="title_desc" {% if active_filters.sort == 'title_desc' %}selected{% endif %}>Title Z-A</option>
-            <option value="shoot_date_desc" {% if active_filters.sort == 'shoot_date_desc' %}selected{% endif %}>Shoot Date (New)</option>
-            <option value="shoot_date_asc" {% if active_filters.sort == 'shoot_date_asc' %}selected{% endif %}>Shoot Date (Old)</option>
+            <option value="published_desc" {% if active_filters.sort == 'published_desc' %}selected{% endif %}>{{ trans('filter.sort_latest', {}, 'Latest First') }}</option>
+            <option value="published_asc" {% if active_filters.sort == 'published_asc' %}selected{% endif %}>{{ trans('filter.sort_oldest', {}, 'Oldest First') }}</option>
+            <option value="title_asc" {% if active_filters.sort == 'title_asc' %}selected{% endif %}>{{ trans('filter.sort_title_asc', {}, 'Title A-Z') }}</option>
+            <option value="title_desc" {% if active_filters.sort == 'title_desc' %}selected{% endif %}>{{ trans('filter.sort_title_desc', {}, 'Title Z-A') }}</option>
+            <option value="shoot_date_desc" {% if active_filters.sort == 'shoot_date_desc' %}selected{% endif %}>{{ trans('filter.sort_date_new', {}, 'Shoot Date (New)') }}</option>
+            <option value="shoot_date_asc" {% if active_filters.sort == 'shoot_date_asc' %}selected{% endif %}>{{ trans('filter.sort_date_old', {}, 'Shoot Date (Old)') }}</option>
           </select>
         </div>
       </div>
