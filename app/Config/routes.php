@@ -409,6 +409,10 @@ $app->post('/admin/texts', function (Request $request, Response $response) use (
     $controller = new \App\Controllers\Admin\TextsController($container['db'], Twig::fromRequest($request));
     return $controller->store($request, $response);
 })->add($container['db'] ? new AuthMiddleware($container['db']) : function($request, $handler) { return $handler->handle($request); });
+$app->post('/admin/texts/seed', function (Request $request, Response $response) use ($container) {
+    $controller = new \App\Controllers\Admin\TextsController($container['db'], Twig::fromRequest($request));
+    return $controller->seed($request, $response);
+})->add($container['db'] ? new AuthMiddleware($container['db']) : function($request, $handler) { return $handler->handle($request); });
 $app->get('/admin/texts/{id}/edit', function (Request $request, Response $response, array $args) use ($container) {
     $controller = new \App\Controllers\Admin\TextsController($container['db'], Twig::fromRequest($request));
     return $controller->edit($request, $response, $args);
@@ -424,10 +428,6 @@ $app->post('/admin/texts/{id}/delete', function (Request $request, Response $res
 $app->post('/admin/texts/{id}/inline', function (Request $request, Response $response, array $args) use ($container) {
     $controller = new \App\Controllers\Admin\TextsController($container['db'], Twig::fromRequest($request));
     return $controller->inlineUpdate($request, $response, $args);
-})->add($container['db'] ? new AuthMiddleware($container['db']) : function($request, $handler) { return $handler->handle($request); });
-$app->post('/admin/texts/seed', function (Request $request, Response $response) use ($container) {
-    $controller = new \App\Controllers\Admin\TextsController($container['db'], Twig::fromRequest($request));
-    return $controller->seed($request, $response);
 })->add($container['db'] ? new AuthMiddleware($container['db']) : function($request, $handler) { return $handler->handle($request); });
 
 // Plugins management
