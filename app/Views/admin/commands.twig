@@ -224,14 +224,22 @@
   </div>
 
 <script>
-let isRunning = false;
+(function() {
+  // Wrap in IIFE to prevent duplicate declaration errors during SPA navigation
+  // Use a unique flag per page load to allow re-initialization
+  const pageLoadId = Date.now();
+  window._commandsPageLoadId = pageLoadId;
 
-function runCommand(command, args = {}) {
+  let isRunning = false;
+
+  window.runCommand = function(command, args = {}) {
+    // Guard against stale closures - only execute if this is the current page instance
+    if (window._commandsPageLoadId !== pageLoadId) return;
     if (isRunning) {
         alert('A command is already running. Please wait.');
         return;
     }
-    
+
     isRunning = true;
     updateOutput(`> Running: ${command}\n`, true);
     updateStatus(command, 'running', 0);
@@ -273,13 +281,13 @@ function runCommand(command, args = {}) {
     });
 }
 
-function runSitemapCommand() {
+window.runSitemapCommand = function() {
     // Use server-detected base URL
     const baseUrl = document.getElementById('detected-base-url').textContent;
-    runCommand('sitemap:build', { 'base-url': baseUrl });
-}
+    window.runCommand('sitemap:build', { 'base-url': baseUrl });
+  };
 
-function updateOutput(text, clear = false) {
+  function updateOutput(text, clear = false) {
     const output = document.getElementById('command-output');
     if (clear) {
         output.textContent = text;
@@ -313,17 +321,18 @@ function updateStatus(command, status, duration) {
     statusDiv.classList.remove('hidden');
 }
 
-function runAnalyticsCleanup() {
+window.runAnalyticsCleanup = function() {
     if (!confirm('Are you sure you want to clean up old analytics data? This will permanently delete data older than your retention period. This action cannot be undone.')) {
         return;
     }
-    
-    runCommand('analytics:cleanup', { 'force': true });
-}
 
-function clearOutput() {
+    window.runCommand('analytics:cleanup', { 'force': true });
+  };
+
+  window.clearOutput = function() {
     document.getElementById('command-output').textContent = 'Ready to execute commands...';
     document.getElementById('command-status').classList.add('hidden');
-}
+  };
+})();
 </script>
 {% endblock %}
