@@ -225,7 +225,8 @@
 
 <script>
 // Commands page - functions are directly on window to work with onclick handlers
-let _commandsIsRunning = false;
+// Use var to allow redeclaration during SPA navigation
+var _commandsIsRunning = _commandsIsRunning || false;
 
 function updateOutput(text, clear) {
   const output = document.getElementById('command-output');
