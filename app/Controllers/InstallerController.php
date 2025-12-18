@@ -236,6 +236,13 @@ class InstallerController
             return $response->withHeader('Location', $this->basePath . '/install/settings')->withStatus(302);
         }
 
+        // Validate required fields
+        $siteTitle = trim((string)($data['site_title'] ?? ''));
+        if ($siteTitle === '') {
+            $_SESSION['flash'][] = ['type' => 'danger', 'message' => 'Site title is required.'];
+            return $response->withHeader('Location', $this->basePath . '/install/settings')->withStatus(302);
+        }
+
         // Handle logo upload
         $uploadedFiles = $request->getUploadedFiles();
         $logoPath = null;
