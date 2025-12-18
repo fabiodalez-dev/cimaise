@@ -168,7 +168,7 @@
 
   {% set layout = template_settings.layout|default('grid') %}
 
-  {% if layout == 'magazine' or current_template_id == 3 %}
+  {% if layout == 'magazine' %}
     <div id="images-gallery" class="mt-6">
       {% include 'frontend/_gallery_magazine_content.twig' with { images: images, template_settings: template_settings, album: album } %}
     </div>
@@ -190,7 +190,7 @@
   
 
 
-  {% if layout != 'magazine' and current_template_id != 3 %}
+  {% if layout != 'magazine' %}
   {# 1. MASONRY FIT - Rispetta proporzioni originali #}
   {% if layout == 'masonry_fit' %}
     <div id="images-gallery" class="masonry-fit-container">
@@ -545,7 +545,7 @@ document.addEventListener('DOMContentLoaded', function() {
   initializeGalleryLayout();
   // If magazine is active on first render, ensure autoscroll
   try {
-    if ({{ current_template_id|default(0) }} == 3 || (window.templateSettings?.layout === 'magazine')) {
+    if (window.templateSettings?.layout === 'magazine') {
       if (typeof initMagazineAutoscroll === 'function') {
         setTimeout(() => { initMagazineAutoscroll(); }, 100);
       } else {
@@ -843,7 +843,7 @@ document.addEventListener('click', function(event) {
       const newMasonry = !!window.templateSettings?.masonry;
       const idKeep = galleryContainer.id;
       galleryContainer.className = '';
-      if (newLayout === 'magazine' || templateId === '3') {
+      if (newLayout === 'magazine') {
         galleryContainer.className = 'mt-6';
       } else if (newLayout === 'slideshow') {
         galleryContainer.className = 'swiper slideshow-pro max-w-6xl mx-auto';
@@ -866,7 +866,7 @@ document.addEventListener('click', function(event) {
         if (typeof initLightbox === 'function') initLightbox();
         if (window.gallerySwiper?.destroy) { window.gallerySwiper.destroy(true, true); window.gallerySwiper = null; }
         if (window.galleryMasonry?.destroy) { window.galleryMasonry.destroy(); window.galleryMasonry = null; }
-        if (newLayout === 'magazine' || templateId === '3') {
+        if (newLayout === 'magazine') {
           console.log('Initializing Magazine Split in delegated handler');
           setTimeout(() => { try { initMagazineAutoscroll(); } catch(e){ console.error('Magazine init error in delegated handler:', e); } }, 100);
         } else {

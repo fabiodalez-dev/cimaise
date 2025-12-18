@@ -631,10 +631,9 @@ class PageController extends BaseController
         $settingsServiceForPage = new \App\Services\SettingsService($this->db);
         $pageTemplate = (string)($settingsServiceForPage->get('gallery.page_template', 'classic') ?? 'classic');
         $pageTemplate = in_array($pageTemplate, ['classic','hero','magazine'], true) ? $pageTemplate : 'classic';
-        // If the selected template is magazine-split, force layout settings to magazine and keep the standard page template
+        // If the selected template is magazine-split, force layout settings to magazine.
         if (($template['slug'] ?? '') === 'magazine-split') {
             $templateSettings['layout'] = 'magazine';
-            $pageTemplate = 'classic';
         }
         $twigTemplate = match ($pageTemplate) {
             'hero' => 'frontend/gallery_hero.twig',
@@ -862,6 +861,9 @@ class PageController extends BaseController
             }
             
             $templateSettings = json_decode($template['settings'] ?? '{}', true) ?: [];
+            if (($template['slug'] ?? '') === 'magazine-split') {
+                $templateSettings['layout'] = 'magazine';
+            }
 
             // Images with per-photo metadata
             $imgStmt = $pdo->prepare('SELECT * FROM images WHERE album_id = :id ORDER BY sort_order ASC, id ASC');

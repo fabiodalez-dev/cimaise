@@ -710,22 +710,14 @@ function initLogoUpload(){
       if (preview) { preview.src = (window.basePath || '') + body.path; preview.classList.remove('hidden'); }
       if (clearBtn) clearBtn.classList.remove('hidden');
 
-      const fmt = (str, params = {}) => {
-        let out = String(str ?? '');
-        Object.keys(params).forEach((k) => {
-          out = out.replaceAll(`{${k}}`, String(params[k]));
-        });
-        return out;
-      };
-
       // Show favicon generation result
       if (body.favicons && body.favicons.success) {
         const count = body.favicons.generated ? body.favicons.generated.length : 0;
-        if (window.showToast) window.showToast(fmt(t('admin.settings.favicons_generated'), { count }), 'success');
+        if (window.showToast) window.showToast(tf('admin.settings.favicons_generated', { count }), 'success');
       } else if (body.favicons && body.favicons.error) {
         if (window.showToast) {
           window.showToast(t('admin.settings.logo_updated'), 'success');
-          window.showToast(fmt(t('admin.settings.favicon_generation_failed'), { error: body.favicons.error }), 'warning');
+          window.showToast(tf('admin.settings.favicon_generation_failed', { error: body.favicons.error }), 'warning');
         }
       } else {
         if (window.showToast) window.showToast(t('admin.settings.logo_updated'), 'success');

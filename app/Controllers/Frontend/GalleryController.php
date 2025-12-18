@@ -504,6 +504,9 @@ class GalleryController extends BaseController
             
             $templateSettings = json_decode($template['settings'] ?? '{}', true) ?: [];
             $templateSettings = $this->normalizeTemplateSettings($templateSettings);
+            if (($template['slug'] ?? '') === 'magazine-split') {
+                $templateSettings['layout'] = 'magazine';
+            }
 
             // Images with per-photo metadata
             $imgStmt = $pdo->prepare('SELECT * FROM images WHERE album_id = :id ORDER BY sort_order ASC, id ASC');

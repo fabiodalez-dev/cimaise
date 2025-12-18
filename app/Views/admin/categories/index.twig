@@ -691,7 +691,7 @@
         if (window.showToast) {
           window.showToast(message, type === 'success' ? '' : 'error');
         } else {
-          alert(`${type.toUpperCase()}: ${message}`);
+          alert(message);
         }
       }
     }
