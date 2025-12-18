@@ -853,7 +853,7 @@ function validateForm(e) {
   
   if (!isValid) {
     e.preventDefault();
-    showToast(t('admin.common.required_fields'), 'error');
+    if (window.showToast) window.showToast(t('admin.common.required_fields'), 'error');
   }
 }
 

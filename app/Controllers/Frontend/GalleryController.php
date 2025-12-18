@@ -119,8 +119,6 @@ class GalleryController extends BaseController
                 $templateSettings = ['layout' => 'grid', 'columns' => ['desktop' => 3, 'tablet' => 2, 'mobile' => 1]];
             } else {
                 $templateSettings = json_decode($template['settings'] ?? '{}', true) ?: [];
-                // Fix deeply nested column structure
-                $templateSettings = $this->normalizeTemplateSettings($templateSettings);
             }
         }
         // Normalize settings and align Magazine Split behavior with AJAX switcher
