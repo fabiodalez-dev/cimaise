@@ -1241,7 +1241,6 @@ class PageController extends BaseController
                    'Content-Type: text/plain; charset=UTF-8';
 
         @mail($to, $subject, $body, $headers);
-        $settings = new \App\Services\SettingsService($this->db);
         $slug = (string)($settings->get('about.slug', 'about') ?? 'about');
         if ($slug === '') { $slug = 'about'; }
         return $response->withHeader('Location', $this->redirect('/' . $slug . '?sent=1'))->withStatus(302);

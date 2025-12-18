@@ -168,6 +168,9 @@ class UploadController extends BaseController
                 $faviconResult = $faviconService->generateFavicons($destPath);
             } catch (\Throwable $faviconError) {
                 $faviconResult['error'] = $faviconError->getMessage();
+                \App\Support\Logger::error('Favicon generation failed after logo upload', [
+                    'error' => $faviconError->getMessage(),
+                ], 'favicon');
             }
 
             $response->getBody()->write(json_encode([

@@ -13,8 +13,8 @@
   <link href="{{ base_path }}/assets/admin.css" rel="stylesheet">
   <link href="{{ base_path }}/assets/vendor/fontawesome/css/all.min.css" rel="stylesheet">
   <script nonce="{{ csp_nonce() }}">
-    window.basePath = '{{ base_path }}';
-    window.cspNonce = '{{ csp_nonce() }}';
+    window.basePath = '{{ base_path|e('js') }}';
+    window.cspNonce = '{{ csp_nonce()|e('js') }}';
 
     // Admin i18n for static JS bundles
     // `admin_translations` is injected server-side in public/index.php when $isAdminRoute is true.
@@ -1018,7 +1018,23 @@
         if (window.AdminInit) {
           try { window.AdminInit(); } catch(e) { console.error('Admin init failed', e); }
         } else {
-          console.warn('SPA: AdminInit function not found');
+          // The Vite module script is deferred and might not have executed yet on first load.
+          // Schedule a short retry loop so we reliably init once the bundle attaches window.AdminInit.
+          if (!window._adminInitWaiter) {
+            console.warn('SPA: AdminInit function not found (will retry)');
+            const start = Date.now();
+            window._adminInitWaiter = window.setInterval(() => {
+              if (window.AdminInit) {
+                window.clearInterval(window._adminInitWaiter);
+                window._adminInitWaiter = null;
+                try { window.AdminInit(); } catch(e) { console.error('Admin init failed', e); }
+              } else if (Date.now() - start > 5000) {
+                window.clearInterval(window._adminInitWaiter);
+                window._adminInitWaiter = null;
+                console.warn('SPA: AdminInit still missing after 5s');
+              }
+            }, 50);
+          }
         }
         
         // Initialize any page-specific components

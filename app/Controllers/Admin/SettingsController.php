@@ -5,6 +5,7 @@ namespace App\Controllers\Admin;
 use App\Controllers\BaseController;
 use App\Services\SettingsService;
 use App\Support\Database;
+use App\Support\Logger;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
@@ -132,8 +133,8 @@ class SettingsController extends BaseController
         $recaptchaEnabled = isset($data['recaptcha_enabled']);
 
         // Get existing keys to check if they're set
-        $existingSiteKey = (string)($svc->get('recaptcha.site_key', '') ?? '');
-        $existingSecretKey = (string)($svc->get('recaptcha.secret_key', '') ?? '');
+        $existingSiteKey = (string)$svc->get('recaptcha.site_key', '');
+        $existingSecretKey = (string)$svc->get('recaptcha.secret_key', '');
 
         // Determine final keys (new value or existing)
         $finalSiteKey = $recaptchaSiteKey !== '' ? $recaptchaSiteKey : $existingSiteKey;
@@ -164,6 +165,9 @@ class SettingsController extends BaseController
     {
         // CSRF validation
         if (!$this->validateCsrf($request)) {
+            if ($this->isAjaxRequest($request)) {
+                return $this->csrfErrorJson($response);
+            }
             $_SESSION['flash'][] = ['type' => 'danger', 'message' => 'Invalid CSRF token'];
             return $response->withHeader('Location', $this->redirect('/admin/settings'))->withStatus(302);
         }
@@ -171,25 +175,47 @@ class SettingsController extends BaseController
         try {
             $consolePath = dirname(__DIR__, 3) . '/bin/console';
             if (!is_executable($consolePath)) {
-                throw new \RuntimeException("Console script not executable");
+                throw new \RuntimeException('Console script not executable');
             }
 
             // Run the command in the background to prevent timeouts
             $cmd = "nohup php $consolePath images:generate --missing > /tmp/image_generation.log 2>&1 &";
             exec($cmd);
-            
+
+            if ($this->isAjaxRequest($request)) {
+                $payload = json_encode([
+                    'success' => true,
+                    'message' => 'Image variant generation started.'
+                ]);
+                $response->getBody()->write($payload !== false ? $payload : '{"success":true}');
+                return $response->withHeader('Content-Type', 'application/json');
+            }
+
             $_SESSION['flash'][] = [
                 'type' => 'info',
-                'message' => 'Image variant generation started. This process may take a few minutes. You will receive a notification when it is complete.'
+                'message' => 'Image variant generation started.'
             ];
-            
+
         } catch (\Throwable $e) {
+            Logger::error('Error starting image variant generation', [
+                'error' => $e->getMessage(),
+            ], 'images');
+
+            if ($this->isAjaxRequest($request)) {
+                $payload = json_encode([
+                    'success' => false,
+                    'error' => 'Generation failed',
+                ]);
+                $response->getBody()->write($payload !== false ? $payload : '{"success":false}');
+                return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+            }
+
             $_SESSION['flash'][] = [
-                'type' => 'danger', 
-                'message' => 'Error starting generation: ' . $e->getMessage()
+                'type' => 'danger',
+                'message' => 'Error starting generation'
             ];
         }
-        
+
         return $response->withHeader('Location', $this->redirect('/admin/settings'))->withStatus(302);
     }
 
@@ -204,7 +230,7 @@ class SettingsController extends BaseController
         try {
             // Get logo path from settings
             $svc = new SettingsService($this->db);
-            $logoPath = (string)($svc->get('site.logo', '') ?? '');
+            $logoPath = (string)$svc->get('site.logo', '');
 
             if ($logoPath === '') {
                 $_SESSION['flash'][] = ['type' => 'danger', 'message' => 'Please upload a logo first before generating favicons'];
@@ -216,13 +242,21 @@ class SettingsController extends BaseController
             $absoluteLogoPath = $publicPath . $logoPath;
 
             if (!file_exists($absoluteLogoPath)) {
-                $_SESSION['flash'][] = ['type' => 'danger', 'message' => 'Logo file not found: ' . $logoPath];
+                Logger::warning('Logo file missing during favicon generation', [
+                    'logoPath' => $logoPath,
+                    'absoluteLogoPath' => $absoluteLogoPath,
+                ], 'favicon');
+                $_SESSION['flash'][] = ['type' => 'danger', 'message' => 'Logo file not found'];
                 return $response->withHeader('Location', $this->redirect('/admin/settings'))->withStatus(302);
             }
 
             // Validate file is readable
             if (!is_readable($absoluteLogoPath)) {
-                $_SESSION['flash'][] = ['type' => 'danger', 'message' => 'Logo file is not readable: ' . $logoPath];
+                Logger::warning('Logo file not readable during favicon generation', [
+                    'logoPath' => $logoPath,
+                    'absoluteLogoPath' => $absoluteLogoPath,
+                ], 'favicon');
+                $_SESSION['flash'][] = ['type' => 'danger', 'message' => 'Logo file is not readable'];
                 return $response->withHeader('Location', $this->redirect('/admin/settings'))->withStatus(302);
             }
 
@@ -252,9 +286,12 @@ class SettingsController extends BaseController
             }
 
         } catch (\Throwable $e) {
+            Logger::error('Error generating favicons', [
+                'error' => $e->getMessage(),
+            ], 'favicon');
             $_SESSION['flash'][] = [
                 'type' => 'danger',
-                'message' => 'Error generating favicons: ' . $e->getMessage()
+                'message' => 'Error generating favicons'
             ];
         }
 

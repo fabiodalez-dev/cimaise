@@ -1157,15 +1157,5 @@ function rebindImageModalHandlers() {
 window.bindGridButtons = bindGridButtons;
 window.rebindBulkSelection = rebindBulkSelection;
 
-// Auto-initialize on module load (ES modules are deferred, so DOM is ready)
-// This ensures AdminInit runs even if the inline script's initializePageScripts()
-// executed before this module loaded. Guard prevents double initialization.
-if (!window._adminInitialized) {
-  window._adminInitialized = true;
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => window.AdminInit());
-  } else {
-    // DOM already ready, initialize immediately
-    window.AdminInit();
-  }
-}
+// Do not auto-run AdminInit here.
+// The admin layout owns bootstrap and SPA re-initialization (see admin/_layout.twig).
