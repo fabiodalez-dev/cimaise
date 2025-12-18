@@ -37,6 +37,16 @@ class SettingsController extends BaseController
         ]);
     }
 
+    /**
+     * Persist settings submitted from the admin settings form and redirect back to the settings page.
+     *
+     * Validates the CSRF token and, on failure, adds a danger flash and redirects to the settings page.
+     * Extracts and normalizes form values (image formats/quality/preview/breakpoints, gallery template and default template ID,
+     * site metadata, date format, language, reCAPTCHA keys/enabled, performance options, pagination and cache TTL, lightbox options)
+     * and saves them via the SettingsService. Adds a success flash message after saving.
+     *
+     * @return Response A response that redirects to the admin settings page.
+     */
     public function save(Request $request, Response $response): Response
     {
         // CSRF validation
@@ -143,6 +153,17 @@ class SettingsController extends BaseController
         return $response->withHeader('Location', $this->redirect('/admin/settings'))->withStatus(302);
     }
 
+    /**
+     * Starts background generation of missing image variants and redirects to the settings page.
+     *
+     * If CSRF validation fails, a danger flash message is added and the user is redirected to /admin/settings.
+     * On success, an informational flash message is added indicating the generation has started.
+     * On error, a danger flash message containing the error message is added.
+     *
+     * @param \Psr\Http\Message\ServerRequestInterface $request Incoming HTTP request (used for CSRF validation).
+     * @param \Psr\Http\Message\ResponseInterface $response HTTP response to modify and return.
+     * @return \Psr\Http\Message\ResponseInterface A response that redirects to /admin/settings with a 302 status.
+     */
     public function generateImages(Request $request, Response $response): Response
     {
         // CSRF validation
@@ -176,6 +197,15 @@ class SettingsController extends BaseController
         return $response->withHeader('Location', $this->redirect('/admin/settings'))->withStatus(302);
     }
 
+    /**
+     * Generate favicons from the configured site logo and redirect back to the settings page.
+     *
+     * Validates CSRF, verifies a logo is configured and exists in the public directory, invokes the FaviconService to create favicons, sets appropriate flash messages for success, warnings (per-file errors), or failures, and always redirects to /admin/settings.
+     *
+     * @param Request $request The incoming HTTP request.
+     * @param Response $response The outgoing HTTP response.
+     * @return Response A response that redirects to /admin/settings with a 302 status.
+     */
     public function generateFavicons(Request $request, Response $response): Response
     {
         // CSRF validation

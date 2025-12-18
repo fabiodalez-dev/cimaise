@@ -98,6 +98,17 @@ class Installer
         }
     }
 
+    /**
+     * Run the full installation process using the given configuration.
+     *
+     * Executes requirement checks, prepares the database, applies schema,
+     * creates the initial admin user, updates site settings, generates favicons,
+     * and writes the environment file. On any error the installer attempts to
+     * roll back changes and rethrows the original exception.
+     *
+     * @param array $data Installation configuration and credentials (e.g. site and admin details, DB settings, site logo path).
+     * @return bool `true` if installation completed successfully.
+     */
     public function install(array $data): bool
     {
         // Reset state tracking
@@ -385,6 +396,16 @@ class Installer
         }
     }
 
+    /**
+     * Create the initial administrator account for a fresh installation.
+     *
+     * Removes any existing users and inserts a single user with the 'admin' role.
+     *
+     * @param array $data Installation input values. Required keys:
+     *                    - 'admin_email' (string): Email address for the admin user.
+     *                    - 'admin_password' (string): Plain-text password for the admin user; it will be hashed using Argon2id.
+     *                    - 'admin_name' (string|null): Optional first name for the admin user; defaults to "Admin" when omitted.
+     */
     private function createFirstUser(array $data): void
     {
         $stmt = $this->db->pdo()->query('SELECT COUNT(*) as count FROM users');
@@ -411,6 +432,16 @@ class Installer
         ]);
     }
 
+    /**
+     * Generates website favicons from the provided site logo, if present.
+     *
+     * Attempts to locate the uploaded logo (expected under the public directory) and uses
+     * App\Services\FaviconService to create favicon files. Errors are logged but do not
+     * prevent the installation process from continuing.
+     *
+     * @param array $data Installation input data; may include a 'site_logo_path' value
+     *                    containing the logo path relative to the public directory.
+     */
     private function generateFavicons(array $data): void
     {
         // Generate favicons from uploaded logo if available
@@ -444,6 +475,23 @@ class Installer
         }
     }
 
+    /**
+     * Persist site and language-specific page settings into the application's settings table.
+     *
+     * Builds a settings map from the provided installation data (including site title, description,
+     * email, language selections, date format, and site logo), merges language-specific page defaults,
+     * encodes each setting value as JSON, and upserts them into the database's `settings` table.
+     *
+     * @param array $data Installation input values. Recognized keys:
+     *                    - 'site_title' (string): Site title.
+     *                    - 'site_description' (string): Site description.
+     *                    - 'site_copyright' (string): Copyright text; may include "{year}".
+     *                    - 'site_email' (string): Contact email.
+     *                    - 'site_language' (string): 'en' or 'it' (defaults to 'en').
+     *                    - 'admin_language' (string): 'en' or 'it' (defaults to 'en').
+     *                    - 'date_format' (string): 'Y-m-d' or 'd-m-Y' (defaults to 'Y-m-d').
+     *                    - 'site_logo_path' (string|null): Path to site logo under public directory.
+     */
     private function updateSiteSettings(array $data): void
     {
         // Validate and sanitize language and date format

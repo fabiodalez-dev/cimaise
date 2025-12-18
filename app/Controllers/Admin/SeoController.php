@@ -169,6 +169,14 @@ class SeoController extends BaseController
         return $response->withHeader('Location', $this->redirect('/admin/seo'))->withStatus(302);
     }
 
+    /**
+     * Generate the site sitemap and redirect back to the SEO admin page.
+     *
+     * Validates the CSRF token, attempts to create the sitemap (using configured canonical base URL or the current base URL),
+     * sets a success or error flash message based on the outcome, and logs unexpected errors.
+     *
+     * @return Response A redirect response to "/admin/seo". Flash messages reflect success, validation failure, or errors. 
+     */
     public function generateSitemap(Request $request, Response $response): Response
     {
         // CSRF validation

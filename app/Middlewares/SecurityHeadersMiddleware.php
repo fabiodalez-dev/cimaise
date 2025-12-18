@@ -12,6 +12,15 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
 {
     private static ?string $nonce = null;
 
+    /**
+     * Adds a per-request CSP nonce to the request, invokes the next handler, and returns the response with a comprehensive set of security headers.
+     *
+     * The generated nonce is stored in the request attribute 'csp_nonce' for downstream use and is included in the Content-Security-Policy header (the CSP allows Google reCAPTCHA domains and uses the nonce for script-src).
+     *
+     * @param Request $request The incoming server request; the CSP nonce will be attached as the 'csp_nonce' attribute.
+     * @param Handler $handler The request handler to invoke.
+     * @return Response The handler's response with additional security headers applied (including Content-Security-Policy).
+     */
     public function process(Request $request, Handler $handler): Response
     {
         // Generate a unique nonce for this request

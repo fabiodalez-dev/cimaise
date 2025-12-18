@@ -11,16 +11,28 @@ class FaviconService
 {
     private string $publicPath;
 
+    /**
+     * Initialize the service with the application's public directory path.
+     *
+     * @param string $publicPath Path to the public directory where generated favicon files and manifest will be written; trailing slash will be normalized away.
+     */
     public function __construct(string $publicPath)
     {
         $this->publicPath = rtrim($publicPath, '/');
     }
 
     /**
-     * Generate all favicon sizes from source image
+     * Generates favicon files in multiple sizes (PNG and ICO workaround) and writes a site.webmanifest from a source image.
      *
-     * @param string $sourceImagePath Absolute path to source image (PNG, JPG, WebP)
-     * @return array Array of generated favicon paths or error info
+     * The method validates the source image, resizes and writes a set of favicon files into the service's public path,
+     * and creates a `site.webmanifest` referencing the generated icons.
+     *
+     * @param string $sourceImagePath Absolute path to the source image (accepted formats: PNG, JPEG, WebP); must be readable.
+     * @return array{
+     *     success: bool,         // true if one or more files were generated
+     *     generated: string[],   // list of generated filenames relative to the public path (e.g. "favicon-32x32.png", "site.webmanifest")
+     *     errors: string[]       // list of error messages encountered during processing
+     * }
      */
     public function generateFavicons(string $sourceImagePath): array
     {
@@ -158,7 +170,11 @@ class FaviconService
     }
 
     /**
-     * Create GD image resource from file path based on MIME type
+     * Create a GD image resource from the given file according to its MIME type.
+     *
+     * @param string $path Filesystem path to the image.
+     * @param string $mimeType The image MIME type (supported: `image/jpeg`, `image/jpg`, `image/png`, `image/webp`, `image/gif`).
+     * @return \GdImage|null A GD image resource on success, or `null` if the MIME type is unsupported or the resource could not be created.
      */
     private function createImageResource(string $path, string $mimeType): ?\GdImage
     {
@@ -172,8 +188,12 @@ class FaviconService
     }
 
     /**
-     * Clean up generated favicons
-     */
+         * Delete the generated favicon files and the site.webmanifest from the service's public path.
+         *
+         * Removes any of the known generated files (favicon files and site.webmanifest) if they exist.
+         *
+         * @return bool `true` if all existing generated files were deleted successfully, `false` otherwise.
+         */
     public function cleanupFavicons(): bool
     {
         $files = [

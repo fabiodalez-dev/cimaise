@@ -16,6 +16,13 @@ class SitemapService
     private string $baseUrl;
     private string $publicPath;
 
+    /**
+     * Initialize the SitemapService with its database dependency and site paths.
+     *
+     * @param Database $db Database instance used to access categories, tags, albums, and settings.
+     * @param string $baseUrl Base site URL (trailing slash is optional; internal value is normalized).
+     * @param string $publicPath Filesystem path to the public directory (trailing slash is optional; internal value is normalized).
+     */
     public function __construct(Database $db, string $baseUrl, string $publicPath)
     {
         $this->db = $db;
@@ -24,9 +31,19 @@ class SitemapService
     }
 
     /**
-     * Generate sitemap.xml file
+     * Generate the site's XML sitemap and update robots.txt with its location.
      *
-     * @return array Result with success status and message
+     * Builds sitemap files in the public path, writes a sitemap index (sitemap.xml),
+     * and attempts to append a `Sitemap:` directive to robots.txt if missing.
+     *
+     * @return array {
+     *     Result of the generation operation.
+     *
+     *     @type bool   $success True when sitemap was generated and written, false on failure.
+     *     @type string $message Present when `$success` is true; human-readable success message including sitemap URL.
+     *     @type string $file    Present when `$success` is true; filesystem path to the generated sitemap.xml.
+     *     @type string $error   Present when `$success` is false; human-readable error message.
+     * }
      */
     public function generate(): array
     {
@@ -116,8 +133,12 @@ class SitemapService
     }
 
     /**
-     * Update robots.txt to include sitemap URL
-     */
+         * Ensure the site's robots.txt contains a Sitemap directive for the generated sitemap.
+         *
+         * Reads (or creates) the file at "{publicPath}/robots.txt", checks case-insensitively for an existing
+         * "Sitemap:" directive, and if absent appends a "Sitemap: {baseUrl}/sitemap.xml" line. Writing is attempted
+         * but failures are suppressed (non-fatal).
+         */
     private function updateRobotsTxt(): void
     {
         $robotsPath = $this->publicPath . '/robots.txt';
@@ -143,7 +164,9 @@ class SitemapService
     }
 
     /**
-     * Check if sitemap exists
+     * Determine whether the sitemap XML file exists in the configured public directory.
+     *
+     * @return bool `true` if sitemap.xml exists in the public path, `false` otherwise.
      */
     public function exists(): bool
     {
@@ -151,7 +174,11 @@ class SitemapService
     }
 
     /**
-     * Get sitemap last modification time
+     * Retrieve the last modification timestamp of the sitemap file.
+     *
+     * Returns the file modification time of "sitemap.xml" in the public path, or `null` if the file does not exist or its modification time cannot be determined.
+     *
+     * @return int|null The Unix timestamp of the sitemap's last modification, or `null` when unavailable.
      */
     public function getLastModified(): ?int
     {

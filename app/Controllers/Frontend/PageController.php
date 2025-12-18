@@ -1095,6 +1095,16 @@ class PageController extends BaseController
         ]);
     }
 
+    /**
+     * Build data for and render the About page.
+     *
+     * Loads about and reCAPTCHA settings, prepares navigation and SEO metadata, extracts contact form query flags,
+     * and renders the frontend/about.twig template with the assembled data (including CSRF token).
+     *
+     * @param \Psr\Http\Message\ServerRequestInterface $request The incoming HTTP request.
+     * @param \Psr\Http\Message\ResponseInterface $response The HTTP response to populate.
+     * @return \Psr\Http\Message\ResponseInterface The response containing the rendered About page.
+     */
     public function about(Request $request, Response $response): Response
     {
         $pdo = $this->db->pdo();
@@ -1152,6 +1162,16 @@ class PageController extends BaseController
         ]);
     }
 
+    /**
+     * Handles submission of the About page contact form: validates input, optionally verifies reCAPTCHA v3,
+     * sends a plain-text contact email using the system From address (user email set in Reply-To), and
+     * redirects back to the About page with status flags.
+     *
+     * Validations performed: CSRF token, non-empty name/message, valid email, optional server-side reCAPTCHA
+     * verification when enabled, and header-injection protection for name/subject/email fields.
+     *
+     * @return Response A Response redirecting to the About page with query flags indicating success (`sent=1`) or error (`error=1`).
+     */
     public function aboutContact(Request $request, Response $response): Response
     {
         // CSRF validation
