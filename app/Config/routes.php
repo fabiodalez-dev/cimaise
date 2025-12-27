@@ -89,6 +89,18 @@ $app->get('/site.webmanifest', function (Request $request, Response $response) u
     return $controller->webManifest($request, $response);
 });
 
+// Typography CSS (dynamic, based on settings)
+$app->get('/fonts/typography.css', function (Request $request, Response $response) use ($container) {
+    $settingsService = new \App\Services\SettingsService($container['db']);
+    $typographyService = new \App\Services\TypographyService($settingsService);
+    $css = $typographyService->generateFullCss();
+
+    $response->getBody()->write($css);
+    return $response
+        ->withHeader('Content-Type', 'text/css')
+        ->withHeader('Cache-Control', 'public, max-age=3600');
+});
+
 // Protected media serving (for password-protected and NSFW albums)
 // Rate limited to prevent scraping/enumeration attacks
 $app->get('/media/protected/{id}/{variant}.{format}', function (Request $request, Response $response, array $args) use ($container) {
@@ -446,6 +458,28 @@ $app->post('/admin/social', function (Request $request, Response $response) use 
 $app->post('/admin/social/profiles', function (Request $request, Response $response) use ($container) {
     $controller = new \App\Controllers\Admin\SocialController($container['db'], Twig::fromRequest($request));
     return $controller->saveProfiles($request, $response);
+})->add($container['db'] ? new AuthMiddleware($container['db']) : function($request, $handler) { return $handler->handle($request); });
+
+// Typography Settings
+$app->get('/admin/typography', function (Request $request, Response $response) use ($container) {
+    $controller = new \App\Controllers\Admin\TypographyController($container['db'], Twig::fromRequest($request));
+    return $controller->index($request, $response);
+})->add($container['db'] ? new AuthMiddleware($container['db']) : function($request, $handler) { return $handler->handle($request); });
+$app->post('/admin/typography', function (Request $request, Response $response) use ($container) {
+    $controller = new \App\Controllers\Admin\TypographyController($container['db'], Twig::fromRequest($request));
+    return $controller->save($request, $response);
+})->add($container['db'] ? new AuthMiddleware($container['db']) : function($request, $handler) { return $handler->handle($request); });
+$app->post('/admin/typography/reset', function (Request $request, Response $response) use ($container) {
+    $controller = new \App\Controllers\Admin\TypographyController($container['db'], Twig::fromRequest($request));
+    return $controller->reset($request, $response);
+})->add($container['db'] ? new AuthMiddleware($container['db']) : function($request, $handler) { return $handler->handle($request); });
+$app->post('/admin/typography/preview', function (Request $request, Response $response) use ($container) {
+    $controller = new \App\Controllers\Admin\TypographyController($container['db'], Twig::fromRequest($request));
+    return $controller->preview($request, $response);
+})->add($container['db'] ? new AuthMiddleware($container['db']) : function($request, $handler) { return $handler->handle($request); });
+$app->get('/admin/typography/font/{slug}', function (Request $request, Response $response, array $args) use ($container) {
+    $controller = new \App\Controllers\Admin\TypographyController($container['db'], Twig::fromRequest($request));
+    return $controller->fontInfo($request, $response, $args);
 })->add($container['db'] ? new AuthMiddleware($container['db']) : function($request, $handler) { return $handler->handle($request); });
 
 // Diagnostics
