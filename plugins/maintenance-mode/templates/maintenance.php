@@ -219,31 +219,6 @@ header('Content-Type: text/html; charset=UTF-8');
             color: #9ca3af;
         }
 
-        /* Decorative elements */
-        .decoration {
-            position: fixed;
-            opacity: 0.03;
-            z-index: -1;
-        }
-
-        .decoration-1 {
-            top: 10%;
-            left: 10%;
-            width: 300px;
-            height: 300px;
-            border: 2px solid #1a1a1a;
-            border-radius: 50%;
-        }
-
-        .decoration-2 {
-            bottom: 15%;
-            right: 10%;
-            width: 200px;
-            height: 200px;
-            border: 2px solid #1a1a1a;
-            transform: rotate(45deg);
-        }
-
         @media (max-width: 640px) {
             .title {
                 font-size: 1.75rem;
@@ -256,18 +231,10 @@ header('Content-Type: text/html; charset=UTF-8');
             .message {
                 font-size: 1rem;
             }
-
-            .decoration {
-                display: none;
-            }
         }
     </style>
 </head>
 <body>
-    <!-- Decorative background elements -->
-    <div class="decoration decoration-1"></div>
-    <div class="decoration decoration-2"></div>
-
     <div class="container">
         <!-- Logo or Site Name -->
         <div class="logo">
