@@ -49,6 +49,9 @@ header('Content-Type: text/html; charset=UTF-8');
     <!-- Favicon -->
     <link rel="icon" href="<?= $basePath ?>/favicon.ico" type="image/x-icon">
 
+    <!-- Typography (local fonts) -->
+    <link rel="stylesheet" href="<?= $basePath ?>/fonts/typography.css">
+
     <style>
         * {
             margin: 0;
@@ -57,7 +60,7 @@ header('Content-Type: text/html; charset=UTF-8');
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: var(--font-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif);
             background-color: #ffffff;
             color: #1a1a1a;
             min-height: 100vh;
@@ -87,6 +90,7 @@ header('Content-Type: text/html; charset=UTF-8');
         }
 
         .logo-text {
+            font-family: var(--font-heading, inherit);
             font-size: 2rem;
             font-weight: 700;
             color: #1a1a1a;
@@ -94,6 +98,7 @@ header('Content-Type: text/html; charset=UTF-8');
         }
 
         .title {
+            font-family: var(--font-heading, inherit);
             font-size: 2.5rem;
             font-weight: 700;
             color: #1a1a1a;
@@ -102,6 +107,7 @@ header('Content-Type: text/html; charset=UTF-8');
         }
 
         .subtitle {
+            font-family: var(--font-heading, inherit);
             font-size: 1.25rem;
             font-weight: 500;
             color: #4b5563;
