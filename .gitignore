@@ -61,7 +61,7 @@ tests/
 # Cache
 .cache/
 
-# Claude auto-memory temp files (keep CLAUDE.md tracked for project notes)
+# Claude auto-memory temp files
 .claude/auto-memory/dirty-files
 .claude/auto-memory/config.json
 
@@ -84,6 +84,7 @@ app/database/
 # Local documentation files (not tracked)
 AGENTS.md
 CHANGELOG.md
+CLAUDE.md
 HOOKS_REFERENCE.md
 INSTALL.md
 INSTALLATION.md
@@ -97,3 +98,14 @@ custom-fields.md
 typography.md
 html/
 PR.md
+plan.md
+cleanup.MD
+
+# Documentation folder (internal only)
+docs/
+
+# Reports folder
+reports/
+
+# Public vendor markdown files
+public/assets/vendor/**/*.md
