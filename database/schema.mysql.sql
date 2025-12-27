@@ -159,6 +159,7 @@ CREATE TABLE IF NOT EXISTS `albums` (
   `canonical_url` VARCHAR(500) NULL,
   `robots_index` TINYINT(1) DEFAULT 1,
   `robots_follow` TINYINT(1) DEFAULT 1,
+  `allow_template_switch` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

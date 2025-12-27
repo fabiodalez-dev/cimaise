@@ -762,13 +762,15 @@ class PageController extends BaseController
             }
         } catch (\Throwable) {}
 
-        // Available templates for switcher
+        // Available templates for switcher (only if allow_template_switch is enabled)
         $availableTemplates = [];
-        try {
-            $list = $pdo->query('SELECT id, name, slug, settings FROM templates ORDER BY name ASC')->fetchAll() ?: [];
-            foreach ($list as &$tpl) { $tpl['settings'] = json_decode($tpl['settings'] ?? '{}', true) ?: []; }
-            $availableTemplates = $list;
-        } catch (\Throwable) { $availableTemplates = []; }
+        if (!empty($album['allow_template_switch'])) {
+            try {
+                $list = $pdo->query('SELECT id, name, slug, settings FROM templates ORDER BY name ASC')->fetchAll() ?: [];
+                foreach ($list as &$tpl) { $tpl['settings'] = json_decode($tpl['settings'] ?? '{}', true) ?: []; }
+                $availableTemplates = $list;
+            } catch (\Throwable) { $availableTemplates = []; }
+        }
 
         // Choose page template (classic, hero, magazine)
         $settingsServiceForPage = new \App\Services\SettingsService($this->db);

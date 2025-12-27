@@ -728,6 +728,8 @@
     "admin.albums.show_date": "Mostra data scatto",
     "admin.albums.album_published": "Album pubblicato",
     "admin.albums.allow_downloads": "Permetti download immagini",
+    "admin.albums.allow_template_switch": "Permetti cambio template",
+    "admin.albums.allow_template_switch_help": "Se abilitato, i visitatori possono cambiare template della galleria",
     "admin.albums.nsfw_content": "Contenuto NSFW",
     "admin.albums.nsfw_help": "Seleziona se l'album contiene contenuti per adulti o sensibili",
     "admin.albums.equipment": "Attrezzatura Fotografica",

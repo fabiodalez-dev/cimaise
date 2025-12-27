@@ -402,14 +402,17 @@ class GalleryController extends BaseController
             'allow_downloads' => !empty($album['allow_downloads']),
         ];
 
-        // Available templates for icon switcher
-        try {
-            $list = $pdo->query('SELECT id, name, slug, settings, libs FROM templates ORDER BY name ASC')->fetchAll() ?: [];
-            foreach ($list as &$tpl) {
-                $tpl['settings'] = json_decode($tpl['settings'] ?? '{}', true) ?: [];
-                $tpl['libs'] = json_decode($tpl['libs'] ?? '[]', true) ?: [];
-            }
-        } catch (\Throwable) { $list = []; }
+        // Available templates for icon switcher (only if allow_template_switch is enabled)
+        $list = [];
+        if (!empty($album['allow_template_switch'])) {
+            try {
+                $list = $pdo->query('SELECT id, name, slug, settings, libs FROM templates ORDER BY name ASC')->fetchAll() ?: [];
+                foreach ($list as &$tpl) {
+                    $tpl['settings'] = json_decode($tpl['settings'] ?? '{}', true) ?: [];
+                    $tpl['libs'] = json_decode($tpl['libs'] ?? '[]', true) ?: [];
+                }
+            } catch (\Throwable) { $list = []; }
+        }
 
         // Nav categories for header
         $navCats = [];

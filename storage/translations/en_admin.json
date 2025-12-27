@@ -727,6 +727,8 @@
     "admin.albums.show_date": "Show shoot date",
     "admin.albums.album_published": "Album published",
     "admin.albums.allow_downloads": "Allow image downloads",
+    "admin.albums.allow_template_switch": "Allow template switching",
+    "admin.albums.allow_template_switch_help": "When enabled, visitors can switch between gallery templates",
     "admin.albums.nsfw_content": "NSFW Content",
     "admin.albums.nsfw_help": "Mark if album contains adult or sensitive content",
     "admin.albums.equipment": "Photo Equipment",

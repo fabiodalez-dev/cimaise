@@ -153,6 +153,7 @@ CREATE TABLE IF NOT EXISTS albums (
   robots_index INTEGER DEFAULT 1,
   robots_follow INTEGER DEFAULT 1,
   is_nsfw INTEGER NOT NULL DEFAULT 0,
+  allow_template_switch INTEGER NOT NULL DEFAULT 0,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT,
   FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT,
