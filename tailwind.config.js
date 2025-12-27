@@ -5,6 +5,24 @@ module.exports = {
     "./public/**/*.{js,html}",
     "./resources/**/*.{js,ts}",
   ],
+  // Safelist essential responsive utilities that must always be included
+  safelist: [
+    'hidden',
+    'block',
+    'flex',
+    'inline-flex',
+    'md:hidden',
+    'md:block',
+    'md:flex',
+    'md:inline-flex',
+    'lg:hidden',
+    'lg:block',
+    'lg:flex',
+    'lg:inline-flex',
+    'sm:hidden',
+    'sm:block',
+    'sm:flex',
+  ],
   theme: {
     extend: {
       fontFamily: {

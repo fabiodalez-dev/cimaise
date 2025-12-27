@@ -91,9 +91,20 @@ $app->get('/site.webmanifest', function (Request $request, Response $response) u
 
 // Typography CSS (dynamic, based on settings)
 $app->get('/fonts/typography.css', function (Request $request, Response $response) use ($container) {
+    // Calculate basePath for subdirectory installations
+    // Use PHP_SELF for index.php path, not SCRIPT_NAME which may be the request URI in dev server
+    $scriptPath = $_SERVER['PHP_SELF'] ?? $_SERVER['SCRIPT_NAME'];
+    if (str_contains($scriptPath, 'index.php')) {
+        $basePath = dirname($scriptPath);
+        $basePath = $basePath === '/' ? '' : $basePath;
+    } else {
+        // PHP dev server or non-standard setup: basePath is empty
+        $basePath = '';
+    }
+
     $settingsService = new \App\Services\SettingsService($container['db']);
     $typographyService = new \App\Services\TypographyService($settingsService);
-    $css = $typographyService->generateFullCss();
+    $css = $typographyService->generateFullCss($basePath);
 
     $response->getBody()->write($css);
     return $response

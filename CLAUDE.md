@@ -896,7 +896,7 @@ $app->get('/path', function(...) { ... })
   - **LocalBusiness schema**: Local SEO with business type, address, phone, geo coordinates, opening hours, price range
 - **Schema configuration**: All schemas controlled via `schema` variable with enable/disable flags
 - **Sitemap generation**: Manual trigger via `/admin/seo` (POST to `generateSitemap` action) uses SitemapService with database-driven URL generation
-- **Preconnect hints**: DNS prefetch for Google Fonts (fonts.googleapis.com, fonts.gstatic.com)
+- **Local fonts**: All fonts served locally from `/fonts/` (GDPR compliant, no Google Fonts)
 - **Favicon support**: Multi-size favicon set with web manifest
   - Sizes: favicon.ico, 16x16, 32x32 (PNG), apple-touch-icon 180x180, site.webmanifest
 - **Accessibility**: `lang` attribute on `<html>` tag with i18n support

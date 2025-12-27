@@ -17,6 +17,15 @@ const path = require('path');
 const FONTS_DIR = path.join(__dirname, '..', 'public', 'fonts');
 const API_BASE = 'https://gwfh.mranftl.com/api/fonts';
 
+// Special font name mappings (when slug → title case is incorrect)
+const FONT_NAME_MAP = {
+  'eb-garamond': 'EB Garamond',
+  'dm-serif-display': 'DM Serif Display',
+  'dm-sans': 'DM Sans',
+  'pt-serif': 'PT Serif',
+  'old-standard-tt': 'Old Standard TT',
+};
+
 // Fonts to download with their weights
 const FONTS = {
   // Serif - Editorial
@@ -185,8 +194,8 @@ function generateFontFacesCss() {
     const fontDir = path.join(FONTS_DIR, fontId);
     if (!fs.existsSync(fontDir)) continue;
 
-    // Determine font family name (convert slug to title case)
-    const fontName = fontId
+    // Determine font family name (use mapping or convert slug to title case)
+    const fontName = FONT_NAME_MAP[fontId] || fontId
       .split('-')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');

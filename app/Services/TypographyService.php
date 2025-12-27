@@ -284,7 +284,7 @@ class TypographyService
         'headings' => [
             'label' => 'Headings',
             'description' => 'Site title, album titles, page headings (h1, h2, h3)',
-            'default_font' => 'playfair-display',
+            'default_font' => 'eb-garamond',
             'default_weight' => 600,
             'css_selector' => 'h1, h2, h3, h4, h5, h6, .site-title, .album-title, .page-title',
         ],
@@ -476,8 +476,8 @@ class TypographyService
             $selector = $contextConfig['css_selector'];
 
             $css .= "{$selector} {\n";
-            $css .= "  font-family: var(--font-{$varName});\n";
-            $css .= "  font-weight: var(--font-{$varName}-weight);\n";
+            $css .= "  font-family: var(--font-{$varName}) !important;\n";
+            $css .= "  font-weight: var(--font-{$varName}-weight) !important;\n";
             $css .= "}\n\n";
         }
 

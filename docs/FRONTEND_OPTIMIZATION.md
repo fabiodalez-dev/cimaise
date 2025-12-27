@@ -185,12 +185,12 @@ Le immagini mantengono proporzioni ottimali per ogni device:
 
 ### Ottimizzazioni Implementate
 
-#### 1. **Preconnect CDN Esterni**
+#### 1. **Local Fonts (GDPR Compliant)**
 ```html
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://cdnjs.cloudflare.com">
-<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+<!-- Local fonts - no external requests, better privacy -->
+<link href="/fonts/typography.css" rel="stylesheet">
 ```
+All fonts are served locally from `/public/fonts/` - no Google Fonts dependency.
 
 #### 2. **Font Display Swap**
 ```css

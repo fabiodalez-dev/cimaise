@@ -116,8 +116,8 @@ npm run build
 ### 7. Start Development Server
 
 ```bash
-# PHP built-in server
-php -S 127.0.0.1:8000 -t public
+# PHP built-in server (router.php required for dynamic routes)
+php -S 127.0.0.1:8000 -t public public/router.php
 
 # Accedi a: http://localhost:8000
 ```
@@ -179,7 +179,7 @@ git checkout -b feature/my-feature
 
 # Test locally
 npm run build
-php -S 127.0.0.1:8000 -t public
+php -S 127.0.0.1:8000 -t public public/router.php
 
 # Commit
 git add .
