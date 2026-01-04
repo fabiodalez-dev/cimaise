@@ -367,6 +367,9 @@ Different content types use optimized caching strategies:
 | **CSS/JS assets** | Stale While Revalidate | Show cached immediately, update in background |
 | **HTML pages** | Network First | Fresh content when online, cache fallback offline |
 | **Admin/API** | Network Only | Never cached, always fresh |
+| **Protected media** | Network Only | Password/NSFW albums never cached (security) |
+
+**Security Note**: Images from password-protected or NSFW albums use the `/media/protected/` endpoint and are **never cached** by the Service Worker. This ensures that when a user logs out or session expires, they cannot access protected content offline.
 
 #### How It Works
 

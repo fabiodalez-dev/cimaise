@@ -82,6 +82,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip protected media (requires authentication, never cache)
+  // Protected albums (password/NSFW) use /media/protected/ endpoint
+  if (url.pathname.startsWith('/media/protected')) {
+    return;
+  }
+
   // Strategy 1: IMAGES - Cache First (instant load!)
   if (isImageRequest(request)) {
     event.respondWith(cacheFirstStrategy(request, CACHE_IMAGES, MAX_IMAGE_CACHE));
