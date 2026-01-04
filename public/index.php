@@ -215,6 +215,11 @@ if ($container['db'] !== null) {
     $twig->getEnvironment()->addExtension(new \App\Extensions\TranslationTwigExtension($translationService));
     // Expose globally for trans() helper function in controllers
     $GLOBALS['translationService'] = $translationService;
+
+    // Add performance extension for optimization features
+    $settingsService = new \App\Services\SettingsService($container['db']);
+    $performanceService = new \App\Services\PerformanceService($container['db'], $settingsService);
+    $twig->getEnvironment()->addExtension(new \App\Extensions\PerformanceTwigExtension($performanceService));
 }
 
 // Let plugins register Twig extensions

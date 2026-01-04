@@ -19,8 +19,18 @@
     <link rel="manifest" href="{{ base_path }}/site.webmanifest">
     <meta name="theme-color" content="#ffffff">
 
-    <!-- Preload local typography fonts -->
+    <!-- Resource Hints for Performance -->
+    {% set hints = resource_hints() %}
+    {% for hint in hints['dns-prefetch'] %}
+    <link rel="dns-prefetch" href="{{ hint.href }}">
+    {% endfor %}
+    {% for hint in hints['preconnect'] %}
+    <link rel="preconnect" href="{{ hint.href }}"{% if hint.crossorigin %} crossorigin{% endif %}>
+    {% endfor %}
+
+    <!-- Preload Critical Resources -->
     <link rel="preload" href="{{ base_path }}/fonts/typography.css" as="style">
+    <link rel="preload" href="{{ base_path }}/assets/app.css" as="style">
     
     <!-- Open Graph -->
     <meta property="og:title" content="{{ page_title|e('html_attr') }}">
@@ -1550,16 +1560,16 @@
 
     <!-- PhotoSwipe lightbox (local) loaded dynamically in JS -->
     
-    <!-- Swiper.js -->
-    <script nonce="{{ csp_nonce() }}" src="{{ base_path }}/assets/vendor/swiper/swiper-bundle.min.js"></script>
+    <!-- Swiper.js - Deferred for better initial load performance -->
+    <script nonce="{{ csp_nonce() }}" src="{{ base_path }}/assets/vendor/swiper/swiper-bundle.min.js" defer></script>
 
-    <!-- GSAP -->
-    <script nonce="{{ csp_nonce() }}" src="{{ base_path }}/assets/vendor/gsap/gsap.min.js"></script>
-    <script nonce="{{ csp_nonce() }}" src="{{ base_path }}/assets/vendor/gsap/ScrollTrigger.min.js"></script>
+    <!-- GSAP - Deferred (progressive enhancement for animations) -->
+    <script nonce="{{ csp_nonce() }}" src="{{ base_path }}/assets/vendor/gsap/gsap.min.js" defer></script>
+    <script nonce="{{ csp_nonce() }}" src="{{ base_path }}/assets/vendor/gsap/ScrollTrigger.min.js" defer></script>
 
-    <!-- imagesLoaded + Masonry -->
-    <script nonce="{{ csp_nonce() }}" src="{{ base_path }}/assets/vendor/imagesloaded/imagesloaded.pkgd.min.js"></script>
-    <script nonce="{{ csp_nonce() }}" src="{{ base_path }}/assets/vendor/masonry/masonry.pkgd.min.js"></script>
+    <!-- imagesLoaded + Masonry - Deferred -->
+    <script nonce="{{ csp_nonce() }}" src="{{ base_path }}/assets/vendor/imagesloaded/imagesloaded.pkgd.min.js" defer></script>
+    <script nonce="{{ csp_nonce() }}" src="{{ base_path }}/assets/vendor/masonry/masonry.pkgd.min.js" defer></script>
     
     <!-- App JS -->
     <script nonce="{{ csp_nonce() }}">
@@ -3615,11 +3625,11 @@
         function fallbackClose(){ const o = document.getElementById('slb-overlay'); if (o) o.classList.remove('active'); }
     </script>
 
-    <!-- Smooth Scroll (Lenis) -->
-    <script nonce="{{ csp_nonce() }}" type="module" src="{{ base_path }}/assets/js/smooth-scroll.js"></script>
+    <!-- Smooth Scroll (Lenis) - Deferred (progressive enhancement) -->
+    <script nonce="{{ csp_nonce() }}" type="module" src="{{ base_path }}/assets/js/smooth-scroll.js" defer></script>
 
-    <!-- Analytics Tracking (Cookieless) -->
-    <script nonce="{{ csp_nonce() }}" src="{{ base_path }}/assets/js/analytics.js"></script>
+    <!-- Analytics Tracking (Cookieless) - Deferred (not critical for initial render) -->
+    <script nonce="{{ csp_nonce() }}" src="{{ base_path }}/assets/js/analytics.js" defer></script>
     <script nonce="{{ csp_nonce() }}">
         // Initialize analytics with site configuration
         // Enable by default; JS guard will self-disable if endpoint fails
