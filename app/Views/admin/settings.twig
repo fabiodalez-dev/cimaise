@@ -582,6 +582,90 @@
       </div>
     </div>
 
+    <!-- Performance & Cache Settings -->
+    <div class="card">
+      <div class="p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+          <i class="fas fa-rocket mr-3 text-gray-600"></i>
+          Performance & Cache
+        </h3>
+        <p class="text-sm text-gray-600 mb-6">
+          Configure compression and caching to improve frontend performance
+        </p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Compression Settings -->
+          <div class="space-y-4">
+            <h4 class="text-sm font-semibold text-gray-900 border-b pb-2">Compression Settings</h4>
+
+            <label class="flex items-center">
+              <input type="checkbox" name="compression_enabled" class="rounded border-gray-300 text-black focus:ring-black" {% if settings['performance.compression_enabled'] %}checked{% endif %}>
+              <span class="ml-3 text-sm text-gray-700">
+                <strong>Enable Compression</strong><br>
+                <span class="text-xs text-gray-500">Compress responses with Brotli or Gzip</span>
+              </span>
+            </label>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Compression Type</label>
+              <select name="compression_type" class="form-input">
+                <option value="auto" {% if settings['performance.compression_type'] == 'auto' %}selected{% endif %}>Auto (Prefer Brotli)</option>
+                <option value="brotli" {% if settings['performance.compression_type'] == 'brotli' %}selected{% endif %}>Brotli Only</option>
+                <option value="gzip" {% if settings['performance.compression_type'] == 'gzip' %}selected{% endif %}>Gzip Only</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">Auto will use Brotli if available, fallback to Gzip</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Compression Level</label>
+              <input type="number" name="compression_level" min="0" max="11" value="{{ settings['performance.compression_level'] }}" class="form-input">
+              <p class="text-xs text-gray-500 mt-1">0-11 for Brotli, 1-9 for Gzip (higher = better compression, slower)</p>
+            </div>
+          </div>
+
+          <!-- Cache Settings -->
+          <div class="space-y-4">
+            <h4 class="text-sm font-semibold text-gray-900 border-b pb-2">Cache Settings</h4>
+
+            <label class="flex items-center">
+              <input type="checkbox" name="cache_enabled" class="rounded border-gray-300 text-black focus:ring-black" {% if settings['performance.cache_enabled'] %}checked{% endif %}>
+              <span class="ml-3 text-sm text-gray-700">
+                <strong>Enable HTTP Cache</strong><br>
+                <span class="text-xs text-gray-500">Add cache headers to responses</span>
+              </span>
+            </label>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Static Assets Cache (seconds)</label>
+              <input type="number" name="static_cache_max_age" min="0" value="{{ settings['performance.static_cache_max_age'] }}" class="form-input">
+              <p class="text-xs text-gray-500 mt-1">Default: 31536000 (1 year) - CSS, JS, images, fonts</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Media Files Cache (seconds)</label>
+              <input type="number" name="media_cache_max_age" min="0" value="{{ settings['performance.media_cache_max_age'] }}" class="form-input">
+              <p class="text-xs text-gray-500 mt-1">Default: 86400 (1 day) - Photography images</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">HTML Pages Cache (seconds)</label>
+              <input type="number" name="html_cache_max_age" min="0" value="{{ settings['performance.html_cache_max_age'] }}" class="form-input">
+              <p class="text-xs text-gray-500 mt-1">Default: 300 (5 minutes) - Dynamic HTML pages</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div class="flex items-start">
+            <i class="fas fa-info-circle text-blue-600 mr-3 mt-0.5"></i>
+            <div class="text-sm text-blue-800">
+              <strong>Note:</strong> Compression requires PHP extensions (brotli, zlib). Cache headers improve browser caching but may require clearing cache to see updates immediately.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Maintenance Mode (only shown when plugin is active) -->
     {% if maintenancePluginActive %}
     <div class="card">

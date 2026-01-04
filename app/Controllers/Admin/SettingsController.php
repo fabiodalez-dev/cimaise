@@ -247,6 +247,22 @@ class SettingsController extends BaseController
         $svc->set('navigation.show_tags_in_header', isset($data['show_tags_in_header']));
         $svc->set('privacy.nsfw_global_warning', isset($data['nsfw_global_warning']));
 
+        // Performance & Cache settings
+        $svc->set('performance.compression_enabled', isset($data['compression_enabled']));
+        $compressionType = in_array($data['compression_type'] ?? 'auto', ['auto', 'brotli', 'gzip'], true)
+            ? $data['compression_type']
+            : 'auto';
+        $svc->set('performance.compression_type', $compressionType);
+        $compressionLevel = max(0, min(11, (int)($data['compression_level'] ?? 6)));
+        $svc->set('performance.compression_level', $compressionLevel);
+        $svc->set('performance.cache_enabled', isset($data['cache_enabled']));
+        $staticCacheMaxAge = max(0, (int)($data['static_cache_max_age'] ?? 31536000));
+        $svc->set('performance.static_cache_max_age', $staticCacheMaxAge);
+        $mediaCacheMaxAge = max(0, (int)($data['media_cache_max_age'] ?? 86400));
+        $svc->set('performance.media_cache_max_age', $mediaCacheMaxAge);
+        $htmlCacheMaxAge = max(0, (int)($data['html_cache_max_age'] ?? 300));
+        $svc->set('performance.html_cache_max_age', $htmlCacheMaxAge);
+
         // Maintenance Mode settings (dot notation for consistency)
         $svc->set('maintenance.enabled', isset($data['maintenance_enabled']));
         $svc->set('maintenance.title', trim((string)($data['maintenance_title'] ?? '')));
