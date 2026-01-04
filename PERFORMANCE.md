@@ -276,6 +276,33 @@ performance.media_cache_max_age (integer: seconds)
 performance.html_cache_max_age (integer: seconds)
 ```
 
+### Running Migrations
+
+For **existing installations**, you need to run the migration to add performance settings to your database:
+
+#### Option 1: PHP Migration (Recommended)
+
+```bash
+# Run from project root
+php bin/migrate.php
+```
+
+This will automatically run `database/migrations/2024_05_performance_settings.php` which adds all performance settings with default values.
+
+#### Option 2: Manual SQL (MySQL)
+
+```bash
+mysql -u username -p database_name < database/migrations/migrate_performance_settings_mysql.sql
+```
+
+#### Option 3: Manual SQL (SQLite)
+
+```bash
+sqlite3 storage/database.sqlite < database/migrations/migrate_performance_settings_sqlite.sql
+```
+
+**Note**: For **new installations**, these settings are automatically populated via `SettingsService` defaults, so no migration is needed.
+
 ## Files Modified/Created
 
 ### New Files
@@ -285,6 +312,9 @@ performance.html_cache_max_age (integer: seconds)
 - `public/manifest.json` - PWA manifest configuration
 - `public/sw.js` - Service Worker for offline caching
 - `public/offline.html` - Offline fallback page
+- `database/migrations/2024_05_performance_settings.php` - PHP migration for performance settings
+- `database/migrations/migrate_performance_settings_mysql.sql` - MySQL migration
+- `database/migrations/migrate_performance_settings_sqlite.sql` - SQLite migration
 - `PERFORMANCE.md` - This documentation
 
 ### Modified Files
