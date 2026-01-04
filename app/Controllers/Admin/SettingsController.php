@@ -45,11 +45,20 @@ class SettingsController extends BaseController
             // Plugin table doesn't exist yet
         }
 
+        // Check compression availability
+        $compressionAvailability = [
+            'brotli' => function_exists('brotli_compress'),
+            'gzip' => function_exists('gzencode'),
+            'deflate' => function_exists('gzdeflate'),
+            'zlib' => extension_loaded('zlib')
+        ];
+
         return $this->view->render($response, 'admin/settings.twig', [
             'settings' => $settings,
             'templates' => $templates,
             'album_page_templates' => $albumPageTemplates,
             'maintenancePluginActive' => $maintenancePluginActive,
+            'compressionAvailability' => $compressionAvailability,
             'csrf' => $_SESSION['csrf'] ?? '',
         ]);
     }

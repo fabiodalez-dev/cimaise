@@ -593,33 +593,109 @@
           Configure compression and caching to improve frontend performance
         </p>
 
+        <!-- Compression Availability Status -->
+        <div class="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3">Server Compression Support</h4>
+          <div class="flex flex-wrap gap-3">
+            {% if compressionAvailability.brotli %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <i class="fas fa-check-circle mr-1.5"></i>
+                Brotli Available
+              </span>
+            {% else %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                <i class="fas fa-times-circle mr-1.5"></i>
+                Brotli Not Available
+              </span>
+            {% endif %}
+
+            {% if compressionAvailability.gzip %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <i class="fas fa-check-circle mr-1.5"></i>
+                Gzip Available
+              </span>
+            {% else %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                <i class="fas fa-times-circle mr-1.5"></i>
+                Gzip Not Available
+              </span>
+            {% endif %}
+
+            {% if compressionAvailability.zlib %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <i class="fas fa-check-circle mr-1.5"></i>
+                Zlib Extension Loaded
+              </span>
+            {% endif %}
+          </div>
+
+          {% if not compressionAvailability.brotli and not compressionAvailability.gzip %}
+          <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded">
+            <div class="flex items-start">
+              <i class="fas fa-exclamation-triangle text-amber-600 mr-2 mt-0.5"></i>
+              <div class="text-xs text-amber-800">
+                <strong>No compression available!</strong> Install PHP extensions:
+                <code class="bg-amber-100 px-1 rounded">pecl install brotli</code> or ensure zlib is enabled.
+              </div>
+            </div>
+          </div>
+          {% elseif not compressionAvailability.brotli %}
+          <div class="mt-3 text-xs text-gray-600">
+            <i class="fas fa-info-circle mr-1"></i>
+            <strong>Tip:</strong> Install Brotli for better compression: <code class="bg-gray-100 px-1 rounded">pecl install brotli</code>
+          </div>
+          {% endif %}
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Compression Settings -->
           <div class="space-y-4">
             <h4 class="text-sm font-semibold text-gray-900 border-b pb-2">Compression Settings</h4>
 
             <label class="flex items-center">
-              <input type="checkbox" name="compression_enabled" class="rounded border-gray-300 text-black focus:ring-black" {% if settings['performance.compression_enabled'] %}checked{% endif %}>
+              <input type="checkbox" name="compression_enabled" class="rounded border-gray-300 text-black focus:ring-black" {% if settings['performance.compression_enabled'] %}checked{% endif %} {% if not compressionAvailability.brotli and not compressionAvailability.gzip %}disabled{% endif %}>
               <span class="ml-3 text-sm text-gray-700">
                 <strong>Enable Compression</strong><br>
-                <span class="text-xs text-gray-500">Compress responses with Brotli or Gzip</span>
+                <span class="text-xs text-gray-500">
+                  {% if compressionAvailability.brotli or compressionAvailability.gzip %}
+                    Compress responses automatically
+                  {% else %}
+                    (Disabled: No compression extensions available)
+                  {% endif %}
+                </span>
               </span>
             </label>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Compression Type</label>
-              <select name="compression_type" class="form-input">
-                <option value="auto" {% if settings['performance.compression_type'] == 'auto' %}selected{% endif %}>Auto (Prefer Brotli)</option>
-                <option value="brotli" {% if settings['performance.compression_type'] == 'brotli' %}selected{% endif %}>Brotli Only</option>
-                <option value="gzip" {% if settings['performance.compression_type'] == 'gzip' %}selected{% endif %}>Gzip Only</option>
+              <select name="compression_type" class="form-input" {% if not compressionAvailability.brotli and not compressionAvailability.gzip %}disabled{% endif %}>
+                <option value="auto" {% if settings['performance.compression_type'] == 'auto' %}selected{% endif %}>
+                  Auto ({% if compressionAvailability.brotli %}Brotli → Gzip{% elseif compressionAvailability.gzip %}Gzip only{% else %}None available{% endif %})
+                </option>
+                <option value="brotli" {% if settings['performance.compression_type'] == 'brotli' %}selected{% endif %} {% if not compressionAvailability.brotli %}disabled{% endif %}>
+                  Brotli Only {% if not compressionAvailability.brotli %}(Not Available){% endif %}
+                </option>
+                <option value="gzip" {% if settings['performance.compression_type'] == 'gzip' %}selected{% endif %} {% if not compressionAvailability.gzip %}disabled{% endif %}>
+                  Gzip Only {% if not compressionAvailability.gzip %}(Not Available){% endif %}
+                </option>
               </select>
-              <p class="text-xs text-gray-500 mt-1">Auto will use Brotli if available, fallback to Gzip</p>
+              <p class="text-xs text-gray-500 mt-1">
+                {% if compressionAvailability.brotli and compressionAvailability.gzip %}
+                  Auto mode uses Brotli first, falls back to Gzip if client doesn't support it
+                {% elseif compressionAvailability.gzip %}
+                  Only Gzip is available on this server
+                {% else %}
+                  No compression algorithms available
+                {% endif %}
+              </p>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Compression Level</label>
-              <input type="number" name="compression_level" min="0" max="11" value="{{ settings['performance.compression_level'] }}" class="form-input">
-              <p class="text-xs text-gray-500 mt-1">0-11 for Brotli, 1-9 for Gzip (higher = better compression, slower)</p>
+              <input type="number" name="compression_level" min="0" max="11" value="{{ settings['performance.compression_level'] }}" class="form-input" {% if not compressionAvailability.brotli and not compressionAvailability.gzip %}disabled{% endif %}>
+              <p class="text-xs text-gray-500 mt-1">
+                0-11 for Brotli, 1-9 for Gzip (higher = better compression, slower)
+              </p>
             </div>
           </div>
 
@@ -659,7 +735,13 @@
           <div class="flex items-start">
             <i class="fas fa-info-circle text-blue-600 mr-3 mt-0.5"></i>
             <div class="text-sm text-blue-800">
-              <strong>Note:</strong> Compression requires PHP extensions (brotli, zlib). Cache headers improve browser caching but may require clearing cache to see updates immediately.
+              <strong>How it works:</strong>
+              <ul class="list-disc ml-5 mt-2 space-y-1">
+                <li><strong>Auto mode (recommended):</strong> System automatically selects the best compression available (Brotli → Gzip → Deflate → None)</li>
+                <li><strong>Fallback:</strong> If Brotli is not available, Gzip is used automatically. If neither is available, content is served uncompressed.</li>
+                <li><strong>Cache:</strong> Improves browser caching and reduces server load. You may need to clear cache to see updates immediately.</li>
+                <li><strong>Performance:</strong> Expect 60-80% size reduction for text content (HTML, CSS, JS) with compression enabled.</li>
+              </ul>
             </div>
           </div>
         </div>
