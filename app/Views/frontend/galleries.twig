@@ -312,6 +312,12 @@
             <span class="text-sm font-medium">{{ trans('album.nsfw_warning_short') }}</span>
           </div>
           {% endif %}
+          {% if is_locked and not is_nsfw_unconfirmed %}
+          <div class="nsfw-overlay absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white backdrop-blur-sm pointer-events-none z-10">
+            <i class="fas fa-lock text-3xl mb-2"></i>
+            <span class="text-sm font-medium">{{ trans('album.password_protected') }}</span>
+          </div>
+          {% endif %}
 
           <!-- Top Right Badges (lock + count) -->
           <div class="absolute top-4 right-4 flex items-center gap-2 z-20">

@@ -12,7 +12,8 @@ class PerformanceService
 {
     public function __construct(
         private Database $db,
-        private SettingsService $settings
+        private SettingsService $settings,
+        private string $basePath
     ) {}
 
     /**
@@ -62,7 +63,7 @@ class PerformanceService
 
         // Preload critical CSS
         $hints['preload'][] = [
-            'href' => '/assets/app.css',
+            'href' => $this->basePath . '/assets/app.css',
             'as' => 'style',
             'type' => 'text/css'
         ];

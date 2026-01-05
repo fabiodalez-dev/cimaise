@@ -1476,6 +1476,8 @@
     "admin.pages.title": "Pages",
     "admin.pages.view": "View",
     "admin.pages.view_page": "View page",
+    "admin.pagination.next": "Next",
+    "admin.pagination.previous": "Previous",
     "admin.plugins.activate": "Activate",
     "admin.plugins.active_plugins": "active",
     "admin.plugins.all_found": "All plugins found in the plugins/ directory",

@@ -64,7 +64,11 @@ $storageOriginalsPath = $root . '/storage/originals';
 
 // Ensure storage/originals directory exists
 if (!is_dir($storageOriginalsPath)) {
-    mkdir($storageOriginalsPath, 0755, true);
+    $created = mkdir($storageOriginalsPath, 0755, true);
+    if (!$created && !is_dir($storageOriginalsPath)) {
+        echo "✗ Error: unable to create directory {$storageOriginalsPath}\n";
+        exit(1);
+    }
 }
 
 // Helper functions
@@ -1333,7 +1337,7 @@ foreach ($albums as $albumData) {
             }
 
             if (!is_file($tempPath)) {
-                echo "     ⚠ File immagine non trovato: {$tempPath}, salto\n";
+                echo "     ⚠ Image file not found: {$tempPath}, skipping\n";
                 continue;
             }
 
@@ -1351,7 +1355,13 @@ foreach ($albums as $albumData) {
             $storageRelativePath = '/storage/originals/' . $hash . $ext;
 
             if (!is_file($storageFilePath)) {
-                copy($tempPath, $storageFilePath);
+                if (!copy($tempPath, $storageFilePath)) {
+                    if (is_file($storageFilePath)) {
+                        @unlink($storageFilePath);
+                    }
+                    echo "     ⚠ Failed to copy image from {$tempPath} to {$storageFilePath}, skipping\n";
+                    continue;
+                }
             }
 
             // Find camera/lens/film IDs
@@ -1368,7 +1378,7 @@ foreach ($albums as $albumData) {
             if (!empty($imgData['film'])) {
                 $imgFilmId = $filmIds[$imgData['film']] ?? null;
                 if ($imgFilmId === null) {
-                    echo "     ⚠ Film '{$imgData['film']}' non trovato per {$imgData['file']}\n";
+                    echo "     ⚠ Film '{$imgData['film']}' not found for {$imgData['file']}\n";
                 }
             }
 
@@ -1433,7 +1443,7 @@ foreach ($albums as $albumData) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-        echo "   ✗ Errore durante il seeding di {$albumData['title']}: {$e->getMessage()}\n";
+        echo "   ✗ Error while seeding {$albumData['title']}: {$e->getMessage()}\n";
         throw $e;
     }
 }

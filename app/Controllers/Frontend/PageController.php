@@ -1586,7 +1586,9 @@ class PageController extends BaseController
                 SELECT ac.category_id
                 FROM album_category ac
                 WHERE ac.album_id = a.id
-                -- LIMIT 1 prevents duplicate rows; selects the lowest category_id as a stable fallback.
+                -- Seleziona una singola categoria per album (la prima per ID) per garantire
+                -- risultati deterministici e prevenire righe duplicate quando un album
+                -- ha categorie multiple nella junction table.
                 ORDER BY ac.category_id ASC
                 LIMIT 1
             )
@@ -2540,8 +2542,15 @@ class PageController extends BaseController
         if ($needsRebuild) {
             $cachedIconFiles = [];
             foreach ($possibleIcons as $icon) {
-                if (file_exists($publicPath . '/' . $icon['file'])) {
-                    $cachedIconFiles[] = $icon['file'];
+                try {
+                    if (@file_exists($publicPath . '/' . $icon['file'])) {
+                        $cachedIconFiles[] = $icon['file'];
+                    }
+                } catch (\Throwable $e) {
+                    \App\Support\Logger::warning('PageController: Error checking PWA icon existence', [
+                        'icon' => $icon['file'],
+                        'error' => $e->getMessage(),
+                    ], 'frontend');
                 }
             }
             try {

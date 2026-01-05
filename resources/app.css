@@ -389,7 +389,7 @@ html.dark .bg-white { background-color: var(--color-bg-secondary) !important; }
 html.dark .bg-white\/95 { background-color: rgb(var(--color-bg-secondary-rgb) / 0.95) !important; }
 html.dark .bg-white\/98 { background-color: rgb(var(--color-bg-secondary-rgb) / 0.98) !important; }
 html.dark .bg-white\/80 { background-color: rgb(var(--color-bg-secondary-rgb) / 0.8) !important; }
-html.dark .bg-gray-50\/80 { background-color: rgba(10, 10, 10, 0.8) !important; }
+html.dark .bg-gray-50\/80 { background-color: rgb(var(--color-bg-primary-rgb) / 0.8) !important; }
 
 /* Dark mode for borders */
 html.dark .border-gray-100 { border-color: #262626; }

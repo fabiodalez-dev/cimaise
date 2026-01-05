@@ -229,7 +229,7 @@ if ($container['db'] !== null) {
     if ($settingsService === null) {
         $settingsService = new \App\Services\SettingsService($container['db']);
     }
-    $performanceService = new \App\Services\PerformanceService($container['db'], $settingsService);
+    $performanceService = new \App\Services\PerformanceService($container['db'], $settingsService, $basePath);
     $twig->getEnvironment()->addExtension(new \App\Extensions\PerformanceTwigExtension($performanceService));
 }
 
