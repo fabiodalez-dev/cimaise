@@ -139,7 +139,7 @@ async function cacheFirstStrategy(request, cacheName, maxItems = 50) {
       const responseToCache = networkResponse.clone();
 
       // Limit cache size
-      limitCacheSize(cacheName, maxItems);
+      await limitCacheSize(cacheName, maxItems);
 
       cache.put(request, responseToCache);
     }
@@ -210,7 +210,7 @@ async function networkFirstStrategy(request, cacheName, maxItems = 20) {
       const responseToCache = networkResponse.clone();
 
       // Limit cache size
-      limitCacheSize(cacheName, maxItems);
+      await limitCacheSize(cacheName, maxItems);
 
       cache.put(request, responseToCache);
     }

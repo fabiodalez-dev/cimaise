@@ -108,6 +108,24 @@ class MediaController extends BaseController
     }
 
     /**
+     * Generate blur variant on-demand for protected albums.
+     * Returns the URL path to the blur variant, or null on failure.
+     */
+    private function generateBlurOnDemand(int $imageId): ?string
+    {
+        try {
+            $uploadService = new \App\Services\UploadService($this->db);
+            return $uploadService->generateBlurredVariant($imageId);
+        } catch (\Throwable $e) {
+            \App\Support\Logger::warning('Failed to generate blur on-demand', [
+                'image_id' => $imageId,
+                'error' => $e->getMessage()
+            ], 'media');
+            return null;
+        }
+    }
+
+    /**
      * Attempt to serve blur variant as fallback for NSFW albums.
      * Returns Response if blur served successfully, null otherwise.
      */
@@ -220,15 +238,23 @@ class MediaController extends BaseController
         // Graceful fallback: if the requested variant is missing (except blur), serve the original file
         if (!$variantRow || empty($variantRow['path'])) {
             if ($variant === 'blur') {
-                return $response->withStatus(404);
+                // Try to generate blur on-demand for protected albums
+                $blurPath = $this->generateBlurOnDemand($imageId);
+                if ($blurPath !== null) {
+                    $variantRow = ['path' => $blurPath];
+                } else {
+                    return $response->withStatus(404);
+                }
+            } else {
+                // For non-blur variants, fallback to original
+                $origStmt = $pdo->prepare('SELECT original_path FROM images WHERE id = :id');
+                $origStmt->execute([':id' => $imageId]);
+                $origPath = $origStmt->fetchColumn();
+                if (!$origPath) {
+                    return $response->withStatus(404);
+                }
+                $variantRow = ['path' => $origPath];
             }
-            $origStmt = $pdo->prepare('SELECT original_path FROM images WHERE id = :id');
-            $origStmt->execute([':id' => $imageId]);
-            $origPath = $origStmt->fetchColumn();
-            if (!$origPath) {
-                return $response->withStatus(404);
-            }
-            $variantRow = ['path' => $origPath];
         }
 
         // Build file path - DB stores URL paths like /media/... which map to public/media/

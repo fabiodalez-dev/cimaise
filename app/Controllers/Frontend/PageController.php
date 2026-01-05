@@ -15,6 +15,8 @@ use Slim\Views\Twig;
 
 class PageController extends BaseController
 {
+    private ?NavigationService $navigationService = null;
+
     public function __construct(private Database $db, private Twig $view)
     {
         parent::__construct();
@@ -195,7 +197,7 @@ class PageController extends BaseController
         $hasMore = $totalAlbums > $perPage;
         
         // Get categories for navigation with hierarchy
-        $parentCategories = (new NavigationService($this->db))->getParentCategoriesForNavigation();
+        $parentCategories = $this->getNavigationService()->getParentCategoriesForNavigation();
         
         // Keep flat list for backward compatibility
         $categories = [];
@@ -320,14 +322,14 @@ class PageController extends BaseController
 
             if (!$allowed) {
                 // Categories for header menu
-                $navCategories = (new NavigationService($this->db))->getNavigationCategories();
+                $navCategories = $this->getNavigationService()->getNavigationCategories();
                 $query = $request->getQueryParams();
                 // Pass error type: '1' for wrong password, 'nsfw' for NSFW confirmation required
                 $error = $query['error'] ?? null;
                 return $this->view->render($response, 'frontend/album_password.twig', [
                     'album' => $album,
                     'categories' => $navCategories,
-                    'parent_categories' => (new NavigationService($this->db))->getParentCategoriesForNavigation(),
+                    'parent_categories' => $this->getNavigationService()->getParentCategoriesForNavigation(),
                     'page_title' => $album['title'] . ' — Protected',
                     'error' => $error,
                     'csrf' => $_SESSION['csrf'] ?? ''
@@ -342,11 +344,11 @@ class PageController extends BaseController
 
         if ($isNsfw && !$isAdmin && empty($album['password_hash']) && !$nsfwConfirmed) {
             // Show NSFW gate page - user must confirm they're 18+ to view
-            $navCategories = (new NavigationService($this->db))->getNavigationCategories();
+            $navCategories = $this->getNavigationService()->getNavigationCategories();
             return $this->view->render($response, 'frontend/nsfw_gate.twig', [
                 'album' => $album,
                 'categories' => $navCategories,
-                'parent_categories' => (new NavigationService($this->db))->getParentCategoriesForNavigation(),
+                'parent_categories' => $this->getNavigationService()->getParentCategoriesForNavigation(),
                 'page_title' => $album['title'] . ' — Age Verification Required',
                 'csrf' => $_SESSION['csrf'] ?? '',
                 'robots' => 'noindex,nofollow'
@@ -625,7 +627,7 @@ class PageController extends BaseController
         }
         
         // Categories for header menu
-        $navCategories = (new NavigationService($this->db))->getNavigationCategories();
+        $navCategories = $this->getNavigationService()->getNavigationCategories();
 
         // Determine if album is protected (requires session access validation)
         $isProtectedAlbum = !empty($album['password_hash']) || !empty($album['is_nsfw']);
@@ -987,7 +989,7 @@ class PageController extends BaseController
             'album_ref' => $albumRef,
             'is_admin' => $isAdmin,
             'categories' => $navCategories,
-            'parent_categories' => (new NavigationService($this->db))->getParentCategoriesForNavigation(),
+            'parent_categories' => $this->getNavigationService()->getParentCategoriesForNavigation(),
             'page_title' => $seoMeta['page_title'],
             'meta_description' => $seoMeta['meta_description'],
             'meta_image' => $seoMeta['meta_image'],
@@ -1539,7 +1541,7 @@ class PageController extends BaseController
             'category' => $category,
             'albums' => $albums,
             'categories' => $categories,
-            'parent_categories' => (new NavigationService($this->db))->getParentCategoriesForNavigation(),
+            'parent_categories' => $this->getNavigationService()->getParentCategoriesForNavigation(),
             'page_title' => $seo['page_title'],
             'meta_description' => $seo['meta_description'],
             'meta_image' => $seo['meta_image'],
@@ -1609,7 +1611,7 @@ class PageController extends BaseController
         $tags = $stmt->fetchAll();
         
         // Categories for header menu
-        $navCategories = (new NavigationService($this->db))->getNavigationCategories();
+        $navCategories = $this->getNavigationService()->getNavigationCategories();
 
         $seo = $this->buildSeo($request, '#' . $tag['name'], 'Photography albums tagged with: ' . $tag['name']);
         return $this->view->render($response, 'frontend/tag.twig', [
@@ -1617,7 +1619,7 @@ class PageController extends BaseController
             'albums' => $albums,
             'tags' => $tags,
             'categories' => $navCategories,
-            'parent_categories' => (new NavigationService($this->db))->getParentCategoriesForNavigation(),
+            'parent_categories' => $this->getNavigationService()->getParentCategoriesForNavigation(),
             'page_title' => $seo['page_title'],
             'meta_description' => $seo['meta_description'],
             'meta_image' => $seo['meta_image'],
@@ -1633,7 +1635,7 @@ class PageController extends BaseController
     public function about(Request $request, Response $response): Response
     {
         // categories for header
-        $navCategories = (new NavigationService($this->db))->getNavigationCategories();
+        $navCategories = $this->getNavigationService()->getNavigationCategories();
         $isAdmin = $this->isAdmin();
         $nsfwConsent = $this->hasNsfwConsent();
 
@@ -1662,7 +1664,7 @@ class PageController extends BaseController
         $seo = $this->buildSeo($request, $aboutTitle, $shortAbout, $aboutPhoto ?: null);
         return $this->view->render($response, 'frontend/about.twig', [
             'categories' => $navCategories,
-            'parent_categories' => (new NavigationService($this->db))->getParentCategoriesForNavigation(),
+            'parent_categories' => $this->getNavigationService()->getParentCategoriesForNavigation(),
             'page_title' => $seo['page_title'],
             'meta_description' => $seo['meta_description'],
             'meta_image' => $seo['meta_image'],
@@ -2516,17 +2518,50 @@ class PageController extends BaseController
             ['file' => 'android-chrome-512x512.png', 'size' => '512x512'],
         ];
 
-        // Only include icons that exist
-        $icons = [];
+        $iconSizeMap = [];
         foreach ($possibleIcons as $icon) {
-            if (file_exists($publicPath . '/' . $icon['file'])) {
-                $icons[] = [
-                    'src' => $basePath . '/' . $icon['file'],
-                    'sizes' => $icon['size'],
-                    'type' => 'image/png',
-                    'purpose' => 'any maskable'
-                ];
+            $iconSizeMap[$icon['file']] = $icon['size'];
+        }
+
+        $cachedIconFiles = $svc->get('pwa.existing_icons', []);
+        $cachedIconFiles = is_array($cachedIconFiles) ? $cachedIconFiles : [];
+        $needsRebuild = $cachedIconFiles === [];
+
+        if (!$needsRebuild) {
+            foreach ($cachedIconFiles as $file) {
+                if (!is_string($file) || !file_exists($publicPath . '/' . $file)) {
+                    $needsRebuild = true;
+                    break;
+                }
             }
+        }
+
+        if ($needsRebuild) {
+            $cachedIconFiles = [];
+            foreach ($possibleIcons as $icon) {
+                if (file_exists($publicPath . '/' . $icon['file'])) {
+                    $cachedIconFiles[] = $icon['file'];
+                }
+            }
+            try {
+                $svc->set('pwa.existing_icons', $cachedIconFiles);
+            } catch (\Throwable) {
+                // Ignore settings write failures for manifest caching.
+            }
+        }
+
+        $icons = [];
+        foreach ($cachedIconFiles as $file) {
+            $size = $iconSizeMap[$file] ?? null;
+            if (!$size) {
+                continue;
+            }
+            $icons[] = [
+                'src' => $basePath . '/' . $file,
+                'sizes' => $size,
+                'type' => 'image/png',
+                'purpose' => 'any maskable'
+            ];
         }
 
         $manifest = [
@@ -2545,5 +2580,13 @@ class PageController extends BaseController
         return $response
             ->withHeader('Content-Type', 'application/manifest+json')
             ->withHeader('Cache-Control', 'public, max-age=86400');
+    }
+
+    private function getNavigationService(): NavigationService
+    {
+        if ($this->navigationService === null) {
+            $this->navigationService = new NavigationService($this->db);
+        }
+        return $this->navigationService;
     }
 }
