@@ -17,4 +17,42 @@ class NavigationService
         $stmt->execute();
         return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
     }
+
+    /**
+     * Get parent categories with children and album counts for mega menu navigation
+     */
+    public function getParentCategoriesForNavigation(): array
+    {
+        $pdo = $this->db->pdo();
+
+        // Get parent categories with album counts (using album_category junction table)
+        $stmt = $pdo->prepare('
+            SELECT c.*, COUNT(DISTINCT a.id) as albums_count
+            FROM categories c
+            LEFT JOIN album_category ac ON ac.category_id = c.id
+            LEFT JOIN albums a ON a.id = ac.album_id AND a.is_published = 1
+            WHERE c.parent_id IS NULL
+            GROUP BY c.id
+            ORDER BY c.sort_order ASC, c.name ASC
+        ');
+        $stmt->execute();
+        $parents = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        // Get children for each parent
+        foreach ($parents as &$parent) {
+            $childStmt = $pdo->prepare('
+                SELECT c.*, COUNT(DISTINCT a.id) as albums_count
+                FROM categories c
+                LEFT JOIN album_category ac ON ac.category_id = c.id
+                LEFT JOIN albums a ON a.id = ac.album_id AND a.is_published = 1
+                WHERE c.parent_id = :parent_id
+                GROUP BY c.id
+                ORDER BY c.sort_order ASC, c.name ASC
+            ');
+            $childStmt->execute([':parent_id' => $parent['id']]);
+            $parent['children'] = $childStmt->fetchAll(\PDO::FETCH_ASSOC);
+        }
+
+        return $parents;
+    }
 }

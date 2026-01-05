@@ -116,14 +116,14 @@ class GalleryController extends BaseController
         if (!empty($album['password_hash']) && !$isAdmin) {
             $allowed = $this->hasAlbumPasswordAccess((int)$album['id']);
             if (!$allowed) {
-                // Categories for header menu
-                $navCategories = (new NavigationService($this->db))->getNavigationCategories();
+                $navService = new NavigationService($this->db);
                 $query = $request->getQueryParams();
                 // Pass error type: '1' for wrong password, 'nsfw' for NSFW confirmation required
                 $error = $query['error'] ?? null;
                 return $this->view->render($response, 'frontend/album_password.twig', [
                     'album' => $album,
-                    'categories' => $navCategories,
+                    'categories' => $navService->getNavigationCategories(),
+                    'parent_categories' => $navService->getParentCategoriesForNavigation(),
                     'page_title' => $album['title'] . ' — Protected',
                     'error' => $error,
                     'csrf' => $_SESSION['csrf'] ?? '',
@@ -133,10 +133,11 @@ class GalleryController extends BaseController
         }
         // NSFW server-side enforcement for albums without password protection
         if ($isNsfwAlbum && !$this->hasNsfwAlbumConsent((int)$album['id'])) {
-            $navCategories = (new NavigationService($this->db))->getNavigationCategories();
+            $navService = new NavigationService($this->db);
             return $this->view->render($response, 'frontend/nsfw_gate.twig', [
                 'album' => $album,
-                'categories' => $navCategories,
+                'categories' => $navService->getNavigationCategories(),
+                'parent_categories' => $navService->getParentCategoriesForNavigation(),
                 'page_title' => $album['title'] . ' — Age Verification Required',
                 'csrf' => $_SESSION['csrf'] ?? '',
                 'robots' => 'noindex,nofollow'

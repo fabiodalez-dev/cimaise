@@ -327,6 +327,7 @@ class PageController extends BaseController
                 return $this->view->render($response, 'frontend/album_password.twig', [
                     'album' => $album,
                     'categories' => $navCategories,
+                    'parent_categories' => $this->getParentCategoriesForNavigation(),
                     'page_title' => $album['title'] . ' — Protected',
                     'error' => $error,
                     'csrf' => $_SESSION['csrf'] ?? ''
@@ -345,6 +346,7 @@ class PageController extends BaseController
             return $this->view->render($response, 'frontend/nsfw_gate.twig', [
                 'album' => $album,
                 'categories' => $navCategories,
+                'parent_categories' => $this->getParentCategoriesForNavigation(),
                 'page_title' => $album['title'] . ' — Age Verification Required',
                 'csrf' => $_SESSION['csrf'] ?? '',
                 'robots' => 'noindex,nofollow'
