@@ -824,10 +824,90 @@ php bin/console migrate              # Run database migrations
 php bin/console seed                 # Seed default templates and categories
 php bin/console user:create          # Create admin user
 php bin/console images:generate      # Generate all image variants
-php bin/console nsfw:blur:generate   # Generate blur variants for NSFW albums
+php bin/console nsfw:generate-blur   # Generate blur variants for protected albums
+php bin/console maintenance:run      # Run daily maintenance (variants + blur)
 php bin/console sitemap:generate     # Build XML sitemap
 php bin/console analytics:cleanup    # Purge old analytics data
 ```
+
+### Blur Generation Options
+
+The `nsfw:generate-blur` command generates blurred preview images for protected albums:
+
+```bash
+# Generate blur for all NSFW and password-protected albums
+php bin/console nsfw:generate-blur
+
+# Process only NSFW albums
+php bin/console nsfw:generate-blur --nsfw-only
+
+# Process only password-protected albums
+php bin/console nsfw:generate-blur --password-only
+
+# Force regeneration of existing blur variants
+php bin/console nsfw:generate-blur --force
+
+# Process all images in albums (not just covers)
+php bin/console nsfw:generate-blur --all
+
+# Process a specific album
+php bin/console nsfw:generate-blur --album=42
+```
+
+---
+
+## Scheduled Maintenance (Cron)
+
+Cimaise includes a maintenance system that automatically generates missing image variants and blur previews for protected albums. This runs automatically on each page request, but for best performance, you can schedule it via cron.
+
+### Recommended Cron Setup
+
+Add this to your crontab (`crontab -e`):
+
+```bash
+# Run maintenance daily at 3 AM
+0 3 * * * cd /path/to/cimaise && php bin/console maintenance:run --quiet
+
+# For high-traffic sites, run every 6 hours
+0 */6 * * * cd /path/to/cimaise && php bin/console maintenance:run --quiet
+```
+
+### What Maintenance Does
+
+The `maintenance:run` command performs these tasks:
+
+1. **Image Variant Generation** — Creates missing responsive variants (AVIF, WebP, JPEG) for all uploaded images
+2. **Blur Variant Generation** — Creates blurred preview images for:
+   - NSFW albums (for age-gated content)
+   - Password-protected albums (for locked content previews)
+
+### Maintenance Features
+
+- **File-based locking** — Prevents concurrent execution if the cron runs while another is still processing
+- **Date tracking** — Skips execution if already run today (unless `--force` is used)
+- **Graceful failure** — Logs errors without blocking other operations
+
+### Manual Execution
+
+```bash
+# Normal run (skips if already run today)
+php bin/console maintenance:run
+
+# Force run even if already run today
+php bin/console maintenance:run --force
+
+# Quiet mode for cron (no output)
+php bin/console maintenance:run --quiet
+```
+
+### When to Use Cron vs. Automatic
+
+| Scenario | Recommendation |
+|----------|----------------|
+| Small portfolio (<100 images) | Automatic is fine |
+| Large portfolio (1000+ images) | Use cron to avoid request delays |
+| High traffic site | Use cron during off-peak hours |
+| Frequent uploads | Run cron more often (every 6 hours) |
 
 ---
 

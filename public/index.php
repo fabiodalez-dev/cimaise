@@ -108,7 +108,12 @@ try {
 ini_set('session.use_strict_mode', '1');
 ini_set('session.cookie_httponly', '1');
 ini_set('session.cookie_samesite', 'Lax');
-if ((bool)($_ENV['APP_DEBUG'] ?? false) === false) {
+// Only set secure cookie flag if actually using HTTPS
+// Checking APP_DEBUG alone breaks HTTP localhost testing in production mode
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || ($_SERVER['SERVER_PORT'] ?? 80) == 443
+    || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+if ($isHttps) {
     ini_set('session.cookie_secure', '1');
 }
 session_start();

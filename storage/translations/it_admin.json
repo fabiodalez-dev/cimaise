@@ -996,6 +996,7 @@
     "admin.flash.image_updated": "Immagine aggiornata con successo",
     "admin.flash.image_uploaded": "Immagine caricata con successo",
     "admin.flash.images_deleted": "Immagini eliminate con successo",
+    "admin.flash.invalid_credentials": "Email o password non validi",
     "admin.flash.json_file_required": "Carica un file JSON valido",
     "admin.flash.json_invalid": "File JSON non valido",
     "admin.flash.json_only": "Sono ammessi solo file JSON",

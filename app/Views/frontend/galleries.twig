@@ -448,6 +448,37 @@
 let galleriesIntroUserScrolled = false;
 let galleriesIntroTimeline = null;
 
+// GSAP safety wrapper - graceful degradation if GSAP fails to load
+const safeGsap = {
+    to: function(target, vars) {
+        if (typeof gsap !== 'undefined') return gsap.to(target, vars);
+        // Fallback: apply end state immediately
+        const els = typeof target === 'string' ? document.querySelectorAll(target) : (target.length !== undefined ? target : [target]);
+        els.forEach(el => {
+            if (vars.opacity !== undefined) el.style.opacity = vars.opacity;
+            if (vars.maxHeight !== undefined) el.style.maxHeight = typeof vars.maxHeight === 'number' ? vars.maxHeight + 'px' : vars.maxHeight;
+            if (vars.rotation !== undefined) el.style.transform = 'rotate(' + vars.rotation + 'deg)';
+            if (vars.y !== undefined) el.style.transform = 'translateY(' + vars.y + 'px)';
+        });
+        if (vars.onComplete) setTimeout(vars.onComplete, 0);
+        return { kill: function() {} };
+    },
+    from: function(target, vars) {
+        if (typeof gsap !== 'undefined') return gsap.from(target, vars);
+        // Fallback: show immediately
+        const els = typeof target === 'string' ? document.querySelectorAll(target) : (target.length !== undefined ? target : [target]);
+        els.forEach(el => { el.style.opacity = '1'; el.style.transform = 'none'; });
+        if (vars.onComplete) setTimeout(vars.onComplete, 0);
+        return { kill: function() {} };
+    },
+    set: function(target, vars) {
+        if (typeof gsap !== 'undefined') return gsap.set(target, vars);
+    },
+    killTweensOf: function(target) {
+        if (typeof gsap !== 'undefined') return gsap.killTweensOf(target);
+    }
+};
+
 window.addEventListener('scroll', function() {
     galleriesIntroUserScrolled = true;
     if (document.body.classList.contains('gsap-intro-animating')) {
@@ -617,10 +648,10 @@ function initFilters() {
         const filtersGrid = $('#filters-grid');
         const chevron = $('#filter-chevron');
         const isOpen = filtersGrid.hasClass('filters-open');
-        
+
         if (isOpen) {
             // Close filters
-            gsap.to(filtersGrid, {
+            safeGsap.to(filtersGrid, {
                 opacity: 0,
                 maxHeight: 0,
                 duration: {{ filter_settings.animation_duration }},
@@ -629,7 +660,7 @@ function initFilters() {
                     filtersGrid.removeClass('filters-open');
                 }
             });
-            gsap.to(chevron, {
+            safeGsap.to(chevron, {
                 rotation: 0,
                 duration: {{ filter_settings.animation_duration }},
                 ease: 'power2.inOut'
@@ -640,23 +671,23 @@ function initFilters() {
             const targetHeight = filtersGrid[0]
                 ? (filtersGrid[0].scrollHeight + 16)
                 : Math.min(window.innerHeight * 0.6, 800);
-            gsap.to(filtersGrid, {
+            safeGsap.to(filtersGrid, {
                 opacity: 1,
                 maxHeight: targetHeight,
                 duration: {{ filter_settings.animation_duration }},
                 ease: 'power2.inOut'
             });
-            gsap.to(chevron, {
+            safeGsap.to(chevron, {
                 rotation: 180,
                 duration: {{ filter_settings.animation_duration }},
                 ease: 'power2.inOut'
             });
-            
+
             // Animate filter groups with safety check
             setTimeout(() => {
                 const filterGroups = document.querySelectorAll('.filter-group');
                 if (filterGroups.length > 0) {
-                    gsap.from('.filter-group', {
+                    safeGsap.from('.filter-group', {
                         y: 15,
                         opacity: 0,
                         duration: {{ filter_settings.animation_duration }},
@@ -790,17 +821,17 @@ function updateGalleries(albums, animate = false) {
         return;
     }
     if (isUpdatingGalleries) {
-        gsap.killTweensOf('#galleries-grid .gallery-card');
+        safeGsap.killTweensOf('#galleries-grid .gallery-card');
     }
     isUpdatingGalleries = true;
-    
+
     // Add animation class
     if (grid[0]) {
         grid[0].classList.add('gsap-grid-animating');
     }
-    
+
     // Animate out current galleries with specific selector
-    gsap.to('#galleries-grid .gallery-card', {
+    safeGsap.to('#galleries-grid .gallery-card', {
         y: -20,
         opacity: 0,
         duration: {{ filter_settings.animation_duration }},
@@ -835,9 +866,9 @@ function updateGalleries(albums, animate = false) {
                     html += generateGalleryCard(album);
                 });
                 grid.html(html);
-                
+
                 // Animate in new galleries with specific selector
-                gsap.from('#galleries-grid .gallery-card', {
+                safeGsap.from('#galleries-grid .gallery-card', {
                     y: 40,
                     opacity: 0,
                     duration: {{ filter_settings.animation_duration }},
@@ -847,7 +878,7 @@ function updateGalleries(albums, animate = false) {
                         if (grid[0]) {
                             grid[0].classList.remove('gsap-grid-animating');
                         }
-                        gsap.set('#galleries-grid .gallery-card', { clearProps: 'all' });
+                        safeGsap.set('#galleries-grid .gallery-card', { clearProps: 'all' });
                         isUpdatingGalleries = false;
                     }
                 });
@@ -1063,10 +1094,10 @@ function updateActiveFilters(filters) {
     
     if (hasActiveFilters) {
         activeFiltersContainer.html(activeFiltersHtml);
-        gsap.to(activeFiltersContainer, { opacity: 1, duration: 0.3 });
-        gsap.to(clearButton, { opacity: 1, duration: 0.3 });
+        safeGsap.to(activeFiltersContainer, { opacity: 1, duration: 0.3 });
+        safeGsap.to(clearButton, { opacity: 1, duration: 0.3 });
     } else {
-        gsap.to([activeFiltersContainer, clearButton], { opacity: 0, duration: 0.3 });
+        safeGsap.to([activeFiltersContainer, clearButton], { opacity: 0, duration: 0.3 });
     }
 }
 
@@ -1099,7 +1130,7 @@ function clearAllFilters() {
 }
 
 function showLoading() {
-    gsap.to('#loading-overlay', {
+    safeGsap.to('#loading-overlay', {
         opacity: 1,
         pointerEvents: 'auto',
         duration: 0.3
@@ -1107,7 +1138,7 @@ function showLoading() {
 }
 
 function hideLoading() {
-    gsap.to('#loading-overlay', {
+    safeGsap.to('#loading-overlay', {
         opacity: 0,
         pointerEvents: 'none',
         duration: 0.3

@@ -2219,18 +2219,26 @@
 
             if (currentScroll > lastScroll && currentScroll > 100) {
                 // Scrolling down
-                gsap.to(header, {
-                    y: -100,
-                    duration: 0.3,
-                    ease: "power2.out"
-                });
+                if (typeof gsap !== 'undefined') {
+                    gsap.to(header, {
+                        y: -100,
+                        duration: 0.3,
+                        ease: "power2.out"
+                    });
+                } else {
+                    header.style.transform = 'translateY(-100px)';
+                }
             } else {
                 // Scrolling up or at top
-                gsap.to(header, {
-                    y: 0,
-                    duration: 0.3,
-                    ease: "power2.out"
-                });
+                if (typeof gsap !== 'undefined') {
+                    gsap.to(header, {
+                        y: 0,
+                        duration: 0.3,
+                        ease: "power2.out"
+                    });
+                } else {
+                    header.style.transform = 'translateY(0)';
+                }
             }
             
             // Add/remove backdrop blur based on scroll

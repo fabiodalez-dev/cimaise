@@ -45,7 +45,7 @@ class FaviconService
         imagealphablending($sourceImage, false);
         imagesavealpha($sourceImage, true);
 
-        // Favicon sizes to generate
+        // Favicon sizes to generate (includes PWA manifest sizes)
         $sizes = [
             'favicon.ico' => 32,      // Standard favicon
             'favicon-16x16.png' => 16,
@@ -54,6 +54,12 @@ class FaviconService
             'apple-touch-icon.png' => 180, // Apple touch icon
             'android-chrome-192x192.png' => 192,
             'android-chrome-512x512.png' => 512,
+            // PWA manifest sizes
+            'icon-72x72.png' => 72,
+            'icon-128x128.png' => 128,
+            'icon-144x144.png' => 144,
+            'icon-152x152.png' => 152,
+            'icon-384x384.png' => 384,
         ];
 
         $generated = [];
@@ -185,6 +191,12 @@ class FaviconService
             'android-chrome-192x192.png',
             'android-chrome-512x512.png',
             'site.webmanifest',
+            // PWA manifest icons
+            'icon-72x72.png',
+            'icon-128x128.png',
+            'icon-144x144.png',
+            'icon-152x152.png',
+            'icon-384x384.png',
         ];
 
         $success = true;

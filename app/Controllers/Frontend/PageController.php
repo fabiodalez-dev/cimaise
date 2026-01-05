@@ -1508,12 +1508,13 @@ class PageController extends BaseController
             return $response->withStatus(404);
         }
         
-        // Get albums in category
+        // Get albums in category (supports both legacy category_id and junction table)
         $stmt = $pdo->prepare('
-            SELECT a.*, c.name as category_name, c.slug as category_slug
-            FROM albums a 
-            JOIN categories c ON c.id = a.category_id 
-            WHERE c.slug = :slug AND a.is_published = 1
+            SELECT DISTINCT a.*, c.name as category_name, c.slug as category_slug
+            FROM albums a
+            JOIN categories c ON c.slug = :slug
+            LEFT JOIN album_category ac ON ac.album_id = a.id AND ac.category_id = c.id
+            WHERE a.is_published = 1 AND (a.category_id = c.id OR ac.category_id IS NOT NULL)
             ORDER BY a.published_at DESC
         ');
         $stmt->execute([':slug' => $slug]);
@@ -1563,13 +1564,17 @@ class PageController extends BaseController
             ]);
         }
         
-        // Get albums with this tag
+        // Get albums with this tag (supports both legacy category_id and junction table)
         $stmt = $pdo->prepare('
-            SELECT a.*, c.name as category_name, c.slug as category_slug
-            FROM albums a 
-            JOIN categories c ON c.id = a.category_id 
+            SELECT DISTINCT a.*,
+                   COALESCE(c1.name, c2.name) as category_name,
+                   COALESCE(c1.slug, c2.slug) as category_slug
+            FROM albums a
             JOIN album_tag at ON at.album_id = a.id
             JOIN tags t ON t.id = at.tag_id
+            LEFT JOIN categories c1 ON c1.id = a.category_id
+            LEFT JOIN album_category ac ON ac.album_id = a.id
+            LEFT JOIN categories c2 ON c2.id = ac.category_id
             WHERE t.slug = :slug AND a.is_published = 1
             ORDER BY a.published_at DESC
         ');
@@ -1814,9 +1819,8 @@ class PageController extends BaseController
         $visibleAlbums = [];
         foreach ($albums as $album) {
             $album = $this->enrichAlbum($album);
-            if (!$isAdmin && !empty($album['password_hash']) && !$this->hasAlbumPasswordAccess((int)$album['id'])) {
-                continue;
-            }
+            // Mark password-protected albums as locked (but still show them in listings)
+            $album['is_locked'] = !$isAdmin && !empty($album['password_hash']) && !$this->hasAlbumPasswordAccess((int)$album['id']);
             $album = $this->sanitizeAlbumCoverForNsfw($album, $isAdmin, $nsfwConsent);
             $album = $this->ensureAlbumCoverImage($album);
             $visibleAlbums[] = $album;

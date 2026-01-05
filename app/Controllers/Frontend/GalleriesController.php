@@ -388,9 +388,8 @@ class GalleriesController extends BaseController
         $visibleAlbums = [];
         foreach ($albums as $album) {
             $album = $this->enrichAlbum($album);
-            if (!$isAdmin && !empty($album['is_password_protected']) && !$this->hasAlbumPasswordAccess((int)$album['id'])) {
-                continue;
-            }
+            // Mark password-protected albums as locked (but still show them in listings)
+            $album['is_locked'] = !$isAdmin && !empty($album['is_password_protected']) && !$this->hasAlbumPasswordAccess((int)$album['id']);
             $album = $this->sanitizeAlbumCoverForNsfw($album, $isAdmin, $nsfwConsent);
             $album = $this->ensureAlbumCoverImage($album);
             $visibleAlbums[] = $album;

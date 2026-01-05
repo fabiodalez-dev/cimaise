@@ -1162,6 +1162,41 @@ echo "╚═══════════════════════�
 echo "\n";
 echo "📷 Images downloaded from Unsplash (free stock photos)\n";
 echo "\n";
-echo "🚀 Run variant generation:\n";
-echo "   php bin/console images:generate\n";
+
+// ============================================
+// POST-SEEDING: Generate variants and blur
+// ============================================
+echo "🔄 Generating image variants and blur previews...\n";
+echo "\n";
+
+// Run images:generate first
+echo "   Running: php bin/console images:generate\n";
+$variantOutput = [];
+$variantReturn = 0;
+exec('php ' . escapeshellarg($root . '/bin/console') . ' images:generate 2>&1', $variantOutput, $variantReturn);
+if ($variantReturn === 0) {
+    echo "   ✓ Image variants generated successfully\n";
+} else {
+    echo "   ⚠ Image variant generation returned code {$variantReturn}\n";
+    foreach ($variantOutput as $line) {
+        echo "     {$line}\n";
+    }
+}
+
+// Run nsfw:generate-blur for protected albums
+echo "   Running: php bin/console nsfw:generate-blur --all\n";
+$blurOutput = [];
+$blurReturn = 0;
+exec('php ' . escapeshellarg($root . '/bin/console') . ' nsfw:generate-blur --all 2>&1', $blurOutput, $blurReturn);
+if ($blurReturn === 0) {
+    echo "   ✓ Blur variants generated for protected albums\n";
+} else {
+    echo "   ⚠ Blur generation returned code {$blurReturn}\n";
+    foreach ($blurOutput as $line) {
+        echo "     {$line}\n";
+    }
+}
+
+echo "\n";
+echo "✅ Demo data seeding complete!\n";
 echo "\n";
