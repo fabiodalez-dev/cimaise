@@ -251,7 +251,7 @@ async function limitCacheSize(cacheName, maxItems) {
     for (let i = 0; i < itemsToDelete; i++) {
       await cache.delete(keys[i]);
     }
-    console.log(`[SW] Cache ${cacheName} trimmed to ${maxItems} items`);
+    log(`[SW] Cache ${cacheName} trimmed to ${maxItems} items`);
   }
 }
 
@@ -269,7 +269,7 @@ function isImageRequest(request) {
  */
 function isStaticAsset(request) {
   const url = new URL(request.url);
-  const staticExtensions = ['.css', '.js', '.woff', '.woff2', '.ttf', '.eot', '.otf'];
+  const staticExtensions = ['.css', '.js', '.woff', '.woff2', '.ttf', '.eot', '.otf', '.map'];
   return staticExtensions.some((ext) => url.pathname.toLowerCase().endsWith(ext));
 }
 

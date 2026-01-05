@@ -31,7 +31,9 @@
     <link rel="dns-prefetch" href="{{ hint.href }}">
     {% endfor %}
     {% for hint in hints['preconnect'] %}
+    {% if hint.href %}
     <link rel="preconnect" href="{{ hint.href }}"{% if hint.crossorigin %} crossorigin{% endif %}>
+    {% endif %}
     {% endfor %}
 
     <!-- Preload Critical Resources -->
@@ -3148,6 +3150,7 @@
                         // Hide any meta-panel (not used)
                         lb.pswp.ui.registerElement({ name: 'meta-panel', order: 99, appendTo: 'root', onInit: (el)=>{ el.style.display='none'; el.className='pswp__meta-panel'; } });
                     
+                        {% if allow_downloads|default(false) %}
                         // Download button - SVG structure matching PhotoSwipe
                         lb.pswp.ui.registerElement({
                             name: 'download-button', order: 8, isButton: true, appendTo: 'bar',
@@ -3183,6 +3186,7 @@
                                 updateVisibility();
                             }
                         });
+                        {% endif %}
 
                         // Fullscreen button - SVG structure matching PhotoSwipe
                         lb.pswp.ui.registerElement({
@@ -3775,10 +3779,16 @@
           .then(function(registration) {
             pwaLog('[PWA] Service Worker registered:', registration.scope);
 
-            // Check for updates periodically
+            // Check for updates periodically (less aggressive)
+            const updateIntervalMs = 15 * 60 * 1000;
             setInterval(function() {
               registration.update();
-            }, 60000); // Check every minute
+            }, updateIntervalMs);
+            document.addEventListener('visibilitychange', function() {
+              if (document.visibilityState === 'visible') {
+                registration.update();
+              }
+            });
 
             // Handle updates
             registration.addEventListener('updatefound', function() {
@@ -3787,10 +3797,29 @@
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                   // New content available, notify user
                   pwaLog('[PWA] New content available, please refresh.');
-                  // Optionally show a notification to the user
-                  if (window.confirm('New version available! Click OK to refresh.')) {
-                    newWorker.postMessage({ type: 'SKIP_WAITING' });
-                    window.location.reload();
+                  // Show a non-blocking update banner
+                  if (!document.getElementById('pwa-update-banner')) {
+                    const banner = document.createElement('div');
+                    banner.id = 'pwa-update-banner';
+                    banner.className = 'fixed bottom-4 left-1/2 z-[9999] flex -translate-x-1/2 items-center gap-3 rounded-full bg-black/90 px-4 py-2 text-xs text-white shadow-lg';
+                    banner.innerHTML = '<span>New version available</span>';
+                    const refreshBtn = document.createElement('button');
+                    refreshBtn.type = 'button';
+                    refreshBtn.className = 'rounded-full bg-white/10 px-3 py-1 text-xs hover:bg-white/20';
+                    refreshBtn.textContent = 'Refresh';
+                    refreshBtn.addEventListener('click', function() {
+                      newWorker.postMessage({ type: 'SKIP_WAITING' });
+                    });
+                    const dismissBtn = document.createElement('button');
+                    dismissBtn.type = 'button';
+                    dismissBtn.className = 'rounded-full bg-white/10 px-3 py-1 text-xs hover:bg-white/20';
+                    dismissBtn.textContent = 'Dismiss';
+                    dismissBtn.addEventListener('click', function() {
+                      banner.remove();
+                    });
+                    banner.appendChild(refreshBtn);
+                    banner.appendChild(dismissBtn);
+                    document.body.appendChild(banner);
                   }
                 }
               });
