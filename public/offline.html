@@ -13,8 +13,8 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
+            background: #ffffff;
+            color: #111111;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -24,113 +24,94 @@
 
         .container {
             text-align: center;
-            max-width: 600px;
+            max-width: 480px;
         }
 
         .icon {
-            width: 120px;
-            height: 120px;
+            width: 64px;
+            height: 64px;
             margin: 0 auto 2rem;
-            opacity: 0.9;
+            color: #999999;
         }
 
         h1 {
-            font-size: 3rem;
+            font-size: 1.5rem;
+            font-weight: 400;
+            letter-spacing: -0.02em;
             margin-bottom: 1rem;
-            font-weight: 700;
+            color: #111111;
         }
 
         p {
-            font-size: 1.25rem;
-            margin-bottom: 2rem;
-            opacity: 0.95;
+            font-size: 0.9375rem;
+            color: #666666;
             line-height: 1.6;
+            margin-bottom: 2rem;
         }
 
         .btn {
             display: inline-block;
-            padding: 1rem 2rem;
-            background: rgba(255, 255, 255, 0.2);
-            color: #fff;
+            padding: 0.75rem 1.5rem;
+            background: #111111;
+            color: #ffffff;
             text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(10px);
+            font-size: 0.875rem;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+            transition: background 0.2s ease;
         }
 
         .btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
+            background: #333333;
         }
 
         .cached-info {
             margin-top: 3rem;
-            padding: 1.5rem;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
-        }
-
-        .cached-info h2 {
-            font-size: 1.25rem;
-            margin-bottom: 0.5rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e5e5e5;
         }
 
         .cached-info p {
-            font-size: 1rem;
-            opacity: 0.8;
+            font-size: 0.8125rem;
+            color: #888888;
             margin-bottom: 0;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 0.6; }
-            50% { opacity: 1; }
-        }
+        @media (max-width: 480px) {
+            body {
+                padding: 1.5rem;
+            }
 
-        .pulse {
-            animation: pulse 2s ease-in-out infinite;
+            h1 {
+                font-size: 1.25rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <svg class="icon pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 1h15M1 7h15M1 13h15M1 19h15" stroke-linecap="round"/>
-            <path d="M18 12l-3-3m0 0l-3 3m3-3v12" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01M10.172 13.172a8 8 0 0111.656 0M6.343 10.343c3.515-3.515 9.199-3.515 12.714 0" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="3" y1="3" x2="21" y2="21" stroke-linecap="round"/>
         </svg>
 
-        <h1>You're Offline</h1>
+        <h1>You're offline</h1>
         <p>
-            It looks like you've lost your internet connection.
-            Don't worry, you can still view previously visited galleries!
+            Check your connection and try again.<br>
+            Previously viewed content may still be available.
         </p>
 
-        <a href="/" class="btn" onclick="window.location.reload(); return false;">Try Again</a>
+        <a href="/" class="btn" onclick="window.location.reload(); return false;">Retry</a>
 
         <div class="cached-info">
-            <h2>📷 Cached Content Available</h2>
-            <p>
-                Previously viewed photos and pages are saved on your device
-                and can be accessed even while offline.
-            </p>
+            <p>Photos and pages you've visited are cached on your device.</p>
         </div>
     </div>
 
     <script>
-        // Auto-retry when connection is restored
         window.addEventListener('online', () => {
             window.location.reload();
         });
-
-        // Show connection status
-        if (navigator.onLine && document.referrer && document.referrer.startsWith(window.location.origin)) {
-            // If we were redirected here from this site, go back online route.
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 1000);
-        }
     </script>
 </body>
 </html>
