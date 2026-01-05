@@ -216,24 +216,40 @@ class ImageVariantsService
             ];
         }
 
+        // Detect database driver for cross-database compatibility
+        // SQLite uses || for concatenation, MySQL uses CONCAT()
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $isSqlite = $driver === 'sqlite';
+
+        // Build concatenation expressions based on database type
+        $cameraConcatExpr = $isSqlite
+            ? "(c.make || ' ' || c.model)"
+            : "CONCAT(c.make, ' ', c.model)";
+        $lensConcatExpr = $isSqlite
+            ? "(l.brand || ' ' || l.model)"
+            : "CONCAT(l.brand, ' ', l.model)";
+        $filmConcatExpr = $isSqlite
+            ? "(f.brand || ' ' || f.name)"
+            : "CONCAT(f.brand, ' ', f.name)";
+
         // Load all equipment in one query with UNION ALL
         try {
             $stmt = $pdo->prepare("
-                SELECT album_id, 'camera' as type, CONCAT(c.make, ' ', c.model) as name
+                SELECT album_id, 'camera' as type, {$cameraConcatExpr} as name
                 FROM album_camera ac
                 JOIN cameras c ON c.id = ac.camera_id
                 WHERE ac.album_id IN ($placeholders)
 
                 UNION ALL
 
-                SELECT album_id, 'lens' as type, CONCAT(l.brand, ' ', l.model) as name
+                SELECT album_id, 'lens' as type, {$lensConcatExpr} as name
                 FROM album_lens al
                 JOIN lenses l ON l.id = al.lens_id
                 WHERE al.album_id IN ($placeholders)
 
                 UNION ALL
 
-                SELECT album_id, 'film' as type, CONCAT(f.brand, ' ', f.name) as name
+                SELECT album_id, 'film' as type, {$filmConcatExpr} as name
                 FROM album_film af
                 JOIN films f ON f.id = af.film_id
                 WHERE af.album_id IN ($placeholders)
