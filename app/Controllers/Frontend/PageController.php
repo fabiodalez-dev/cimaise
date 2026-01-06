@@ -440,83 +440,59 @@ class PageController extends BaseController
         } catch (\Throwable) {}
 
         // Equipment (album-level pivot lists)
+        // PERFORMANCE: Use batch loading (1 query) instead of 6 separate queries
         $equipment = [ 'cameras'=>[], 'lenses'=>[], 'film'=>[], 'developers'=>[], 'labs'=>[], 'locations'=>[] ];
 
-        // Load equipment: each type in its own try-catch to avoid one failure breaking all
-        // 1. Cameras
-        try {
-            if (!empty($album['custom_cameras'])) {
-                $equipment['cameras'] = array_filter(array_map('trim', explode("\n", $album['custom_cameras'])));
-            } else {
-                $cameraStmt = $pdo->prepare('SELECT c.make, c.model FROM cameras c JOIN album_camera ac ON c.id = ac.camera_id WHERE ac.album_id = :a');
-                $cameraStmt->execute([':a' => $album['id']]);
-                $cameras = $cameraStmt->fetchAll();
-                $equipment['cameras'] = array_map(fn($c) => trim(($c['make'] ?? '') . ' ' . ($c['model'] ?? '')), $cameras);
-            }
-        } catch (\Throwable) {}
+        // 1. Check custom fields first (they take priority over DB relationships)
+        if (!empty($album['custom_cameras'])) {
+            $equipment['cameras'] = array_filter(array_map('trim', explode("\n", $album['custom_cameras'])));
+        }
+        if (!empty($album['custom_lenses'])) {
+            $equipment['lenses'] = array_filter(array_map('trim', explode("\n", $album['custom_lenses'])));
+        }
+        if (!empty($album['custom_films'])) {
+            $equipment['film'] = array_filter(array_map('trim', explode("\n", $album['custom_films'])));
+        }
+        if (!empty($album['custom_developers'])) {
+            $equipment['developers'] = array_filter(array_map('trim', explode("\n", $album['custom_developers'])));
+        }
+        if (!empty($album['custom_labs'])) {
+            $equipment['labs'] = array_filter(array_map('trim', explode("\n", $album['custom_labs'])));
+        }
 
-        // 2. Lenses
-        try {
-            if (!empty($album['custom_lenses'])) {
-                $equipment['lenses'] = array_filter(array_map('trim', explode("\n", $album['custom_lenses'])));
-            } else {
-                $lensStmt = $pdo->prepare('SELECT l.brand, l.model FROM lenses l JOIN album_lens al ON l.id = al.lens_id WHERE al.album_id = :a');
-                $lensStmt->execute([':a' => $album['id']]);
-                $lenses = $lensStmt->fetchAll();
-                $equipment['lenses'] = array_map(fn($l) => trim(($l['brand'] ?? '') . ' ' . ($l['model'] ?? '')), $lenses);
-            }
-        } catch (\Throwable) {}
+        // 2. For any equipment types not set via custom fields, load from DB in ONE query
+        $needsDbLookup = empty($equipment['cameras']) || empty($equipment['lenses']) ||
+                         empty($equipment['film']) || empty($equipment['developers']) ||
+                         empty($equipment['labs']) || empty($equipment['locations']);
 
-        // 3. Films
-        try {
-            if (!empty($album['custom_films'])) {
-                $equipment['film'] = array_filter(array_map('trim', explode("\n", $album['custom_films'])));
-            } else {
-                $filmStmt = $pdo->prepare('SELECT f.brand, f.name, f.iso, f.format FROM films f JOIN album_film af ON f.id = af.film_id WHERE af.album_id = :a');
-                $filmStmt->execute([':a' => $album['id']]);
-                $films = $filmStmt->fetchAll();
-                $equipment['film'] = array_map(function($f) {
-                    $name = trim(($f['brand'] ?? '') . ' ' . ($f['name'] ?? ''));
-                    return [
-                        'name' => $name,
-                        'iso' => $f['iso'] ?? null,
-                        'format' => $f['format'] ?? null
-                    ];
-                }, $films);
-            }
-        } catch (\Throwable) {}
+        if ($needsDbLookup) {
+            try {
+                $dbEquipment = \App\Services\ImageVariantsService::eagerLoadEquipment($pdo, [(int)$album['id']]);
+                $albumEquip = $dbEquipment[(int)$album['id']] ?? [];
 
-        // 4. Developers
-        try {
-            if (!empty($album['custom_developers'])) {
-                $equipment['developers'] = array_filter(array_map('trim', explode("\n", $album['custom_developers'])));
-            } else {
-                $devStmt = $pdo->prepare('SELECT d.name FROM developers d JOIN album_developer ad ON d.id = ad.developer_id WHERE ad.album_id = :a');
-                $devStmt->execute([':a' => $album['id']]);
-                $developers = $devStmt->fetchAll();
-                $equipment['developers'] = array_map(fn($d) => $d['name'], $developers);
+                // Merge only empty equipment types (preserve custom field priority)
+                if (empty($equipment['cameras'])) {
+                    $equipment['cameras'] = $albumEquip['cameras'] ?? [];
+                }
+                if (empty($equipment['lenses'])) {
+                    $equipment['lenses'] = $albumEquip['lenses'] ?? [];
+                }
+                if (empty($equipment['film'])) {
+                    $equipment['film'] = $albumEquip['film'] ?? [];
+                }
+                if (empty($equipment['developers'])) {
+                    $equipment['developers'] = $albumEquip['developers'] ?? [];
+                }
+                if (empty($equipment['labs'])) {
+                    $equipment['labs'] = $albumEquip['labs'] ?? [];
+                }
+                if (empty($equipment['locations'])) {
+                    $equipment['locations'] = $albumEquip['locations'] ?? [];
+                }
+            } catch (\Throwable) {
+                // Equipment tables might not exist yet
             }
-        } catch (\Throwable) {}
-
-        // 5. Labs
-        try {
-            if (!empty($album['custom_labs'])) {
-                $equipment['labs'] = array_filter(array_map('trim', explode("\n", $album['custom_labs'])));
-            } else {
-                $labStmt = $pdo->prepare('SELECT l.name FROM labs l JOIN album_lab al ON l.id = al.lab_id WHERE al.album_id = :a');
-                $labStmt->execute([':a' => $album['id']]);
-                $labs = $labStmt->fetchAll();
-                $equipment['labs'] = array_map(fn($l) => $l['name'], $labs);
-            }
-        } catch (\Throwable) {}
-
-        // 6. Locations
-        try {
-            $locStmt = $pdo->prepare('SELECT l.name FROM locations l JOIN album_location al ON l.id = al.location_id WHERE al.album_id = :a ORDER BY l.name');
-            $locStmt->execute([':a' => $album['id']]);
-            $locations = $locStmt->fetchAll();
-            $equipment['locations'] = array_map(fn($l) => $l['name'], $locations);
-        } catch (\Throwable) {}
+        }
         
         // Get album images
         $stmt = $pdo->prepare('
@@ -527,12 +503,15 @@ class PageController extends BaseController
         ');
         $stmt->execute([':id' => $album['id']]);
         $images = $stmt->fetchAll();
-        
-        // Get variants for each image and format EXIF
+
+        // PERFORMANCE: Eager load ALL variants in one query instead of N+1 queries
+        // Before: 50 images = 50 queries. After: 50 images = 1 query
+        $imageIds = array_column($images, 'id');
+        $variantsByImage = \App\Services\ImageVariantsService::eagerLoadVariants($pdo, $imageIds);
+
+        // Attach variants to images and format EXIF
         foreach ($images as &$image) {
-            $variantsStmt = $pdo->prepare('SELECT * FROM image_variants WHERE image_id = :id ORDER BY variant ASC');
-            $variantsStmt->execute([':id' => $image['id']]);
-            $image['variants'] = $variantsStmt->fetchAll();
+            $image['variants'] = $variantsByImage[(int)$image['id']] ?? [];
 
             // Format EXIF for display
             if (!empty($image['exif'])) {
@@ -643,41 +622,35 @@ class PageController extends BaseController
             $bestUrl = $image['original_path'];
             // Default lightbox URL; replaced below with largest available variant
             $lightboxUrl = $bestUrl;
-            try {
-                // Grid: prefer largest public variant (format priority avif > webp > jpg)
-                $vg = $pdo->prepare("SELECT path, width, height, variant, format FROM image_variants
-                    WHERE image_id = :id AND path NOT LIKE '/storage/%'
-                    ORDER BY CASE format WHEN 'avif' THEN 1 WHEN 'webp' THEN 2 ELSE 3 END, width DESC LIMIT 1");
-                $vg->execute([':id' => $image['id']]);
-                if ($vgr = $vg->fetch()) {
-                    if (!empty($vgr['path'])) {
-                        // For protected albums, use protected media URL instead of direct path
-                        if ($isProtectedAlbum && !$isAdmin) {
-                            $bestUrl = '/media/protected/' . $image['id'] . '/' . $vgr['variant'] . '.' . $vgr['format'];
-                        } else {
-                            $bestUrl = $vgr['path'];
-                        }
-                    }
-                }
 
-                // Lightbox: for protected albums, use protected original URL
-                $chosen = $this->selectBestLightboxVariant((array)($image['variants'] ?? []));
-                if ($chosen !== null) {
-                    if ($isProtectedAlbum && !$isAdmin) {
-                        $lightboxUrl = '/media/protected/' . $image['id'] . '/' . $chosen['variant'] . '.' . $chosen['format'];
-                    } else {
-                        $lightboxUrl = $chosen['path'];
-                    }
+            // PERFORMANCE: Use pre-loaded variants instead of querying per image
+            // Grid: prefer largest public variant (format priority avif > webp > jpg)
+            $vgr = \App\Services\ImageVariantsService::getBestGridVariant($image['variants'] ?? []);
+            if ($vgr && !empty($vgr['path'])) {
+                // For protected albums, use protected media URL instead of direct path
+                if ($isProtectedAlbum && !$isAdmin) {
+                    $bestUrl = '/media/protected/' . $image['id'] . '/' . $vgr['variant'] . '.' . $vgr['format'];
                 } else {
-                    $lightboxUrl = $bestUrl;
-                    // Always protect /storage/ paths for protected albums, regardless of allow_downloads
-                    if ($isProtectedAlbum && !$isAdmin && (empty($bestUrl) || str_starts_with((string)$bestUrl, '/storage/'))) {
-                        $lightboxUrl = '/media/protected/' . $image['id'] . '/original';
-                    }
+                    $bestUrl = $vgr['path'];
                 }
-            } catch (\Throwable $e) {
-                Logger::warning('PageController: Error fetching image variants', ['image_id' => $image['id'] ?? null, 'error' => $e->getMessage()], 'frontend');
             }
+
+            // Lightbox: for protected albums, use protected original URL
+            $chosen = \App\Services\ImageVariantsService::getBestLightboxVariant($image['variants'] ?? []);
+            if ($chosen !== null) {
+                if ($isProtectedAlbum && !$isAdmin) {
+                    $lightboxUrl = '/media/protected/' . $image['id'] . '/' . $chosen['variant'] . '.' . $chosen['format'];
+                } else {
+                    $lightboxUrl = $chosen['path'];
+                }
+            } else {
+                $lightboxUrl = $bestUrl;
+                // Always protect /storage/ paths for protected albums, regardless of allow_downloads
+                if ($isProtectedAlbum && !$isAdmin && (empty($bestUrl) || str_starts_with((string)$bestUrl, '/storage/'))) {
+                    $lightboxUrl = '/media/protected/' . $image['id'] . '/original';
+                }
+            }
+
             // Final fallback: if still pointing to /storage, use grid URL
             if (str_starts_with((string)$lightboxUrl, '/storage/')) { $lightboxUrl = $bestUrl; }
 
@@ -1792,6 +1765,136 @@ class PageController extends BaseController
         return $response->withHeader('Location', $this->redirect('/' . $slug . '?sent=1'))->withStatus(302);
     }
 
+    /**
+     * Batch enrich multiple albums with cover images, tags, locations, and counts.
+     * Reduces N+1 queries from ~5 per album to 5 total queries.
+     *
+     * @param array $albums Albums to enrich
+     * @return array Enriched albums
+     */
+    private function enrichAlbumsBatch(array $albums): array
+    {
+        if (empty($albums)) {
+            return [];
+        }
+
+        $pdo = $this->db->pdo();
+        $albumIds = array_column($albums, 'id');
+        $coverImageIds = array_filter(array_column($albums, 'cover_image_id'));
+
+        // Build placeholders
+        $albumPlaceholders = implode(',', array_fill(0, count($albumIds), '?'));
+
+        // 1. Batch fetch cover images
+        $coverImages = [];
+        if (!empty($coverImageIds)) {
+            $coverPlaceholders = implode(',', array_fill(0, count($coverImageIds), '?'));
+            $stmt = $pdo->prepare("SELECT * FROM images WHERE id IN ($coverPlaceholders)");
+            $stmt->execute(array_values($coverImageIds));
+            foreach ($stmt->fetchAll() as $img) {
+                $coverImages[(int)$img['id']] = $img;
+            }
+        }
+
+        // 2. Batch fetch variants for all cover images
+        $variantsByImage = [];
+        if (!empty($coverImageIds)) {
+            $stmt = $pdo->prepare("
+                SELECT * FROM image_variants
+                WHERE image_id IN ($coverPlaceholders)
+                ORDER BY image_id, variant ASC
+            ");
+            $stmt->execute(array_values($coverImageIds));
+            foreach ($stmt->fetchAll() as $variant) {
+                $imageId = (int)$variant['image_id'];
+                if (!isset($variantsByImage[$imageId])) {
+                    $variantsByImage[$imageId] = [];
+                }
+                $variantsByImage[$imageId][] = $variant;
+            }
+        }
+
+        // 3. Batch fetch tags for all albums
+        $tagsByAlbum = [];
+        $stmt = $pdo->prepare("
+            SELECT at.album_id, t.*
+            FROM tags t
+            JOIN album_tag at ON at.tag_id = t.id
+            WHERE at.album_id IN ($albumPlaceholders)
+            ORDER BY t.name ASC
+        ");
+        $stmt->execute($albumIds);
+        foreach ($stmt->fetchAll() as $tag) {
+            $albumId = (int)$tag['album_id'];
+            unset($tag['album_id']);
+            if (!isset($tagsByAlbum[$albumId])) {
+                $tagsByAlbum[$albumId] = [];
+            }
+            $tagsByAlbum[$albumId][] = $tag;
+        }
+
+        // 4. Batch fetch locations for all albums
+        $locationsByAlbum = [];
+        try {
+            $stmt = $pdo->prepare("
+                SELECT al.album_id, l.id, l.name, l.slug
+                FROM album_location al
+                JOIN locations l ON l.id = al.location_id
+                WHERE al.album_id IN ($albumPlaceholders)
+                ORDER BY l.name
+            ");
+            $stmt->execute($albumIds);
+            foreach ($stmt->fetchAll() as $loc) {
+                $albumId = (int)$loc['album_id'];
+                unset($loc['album_id']);
+                if (!isset($locationsByAlbum[$albumId])) {
+                    $locationsByAlbum[$albumId] = [];
+                }
+                $locationsByAlbum[$albumId][] = $loc;
+            }
+        } catch (\Throwable) {
+            // Locations table may not exist
+        }
+
+        // 5. Batch fetch image counts for all albums
+        $countsByAlbum = [];
+        $stmt = $pdo->prepare("
+            SELECT album_id, COUNT(*) as cnt
+            FROM images
+            WHERE album_id IN ($albumPlaceholders)
+            GROUP BY album_id
+        ");
+        $stmt->execute($albumIds);
+        foreach ($stmt->fetchAll() as $row) {
+            $countsByAlbum[(int)$row['album_id']] = (int)$row['cnt'];
+        }
+
+        // Assemble enriched albums
+        foreach ($albums as &$album) {
+            $albumId = (int)$album['id'];
+            $coverImageId = $album['cover_image_id'] ? (int)$album['cover_image_id'] : null;
+
+            // Cover image with variants
+            if ($coverImageId && isset($coverImages[$coverImageId])) {
+                $cover = $coverImages[$coverImageId];
+                $cover['variants'] = $variantsByImage[$coverImageId] ?? [];
+                $album['cover'] = $cover;
+            }
+
+            // Tags
+            $album['tags'] = $tagsByAlbum[$albumId] ?? [];
+
+            // Locations
+            $album['locations'] = $locationsByAlbum[$albumId] ?? [];
+
+            // Images count
+            $album['images_count'] = $countsByAlbum[$albumId] ?? 0;
+        }
+        unset($album);
+
+        return $albums;
+    }
+
     private function enrichAlbum(array $album): array
     {
         $pdo = $this->db->pdo();
@@ -1838,9 +1941,15 @@ class PageController extends BaseController
 
     private function filterAlbumsByAccess(array $albums, bool $isAdmin, bool $nsfwConsent): array
     {
+        if (empty($albums)) {
+            return [];
+        }
+
+        // Batch enrich all albums at once (5 queries instead of 5*N)
+        $albums = $this->enrichAlbumsBatch($albums);
+
         $visibleAlbums = [];
         foreach ($albums as $album) {
-            $album = $this->enrichAlbum($album);
             $album['is_password_protected'] = !empty($album['password_hash']);
             unset($album['password_hash']);
             // Mark password-protected albums as locked (but still show them in listings)

@@ -1566,7 +1566,11 @@ echo "\n";
 $postSeedingSuccess = ($variantReturn === 0 && $blurReturn === 0);
 if ($postSeedingSuccess) {
     echo "✅ Demo data seeding complete!\n";
+    echo "\n";
+    exit(0);
 } else {
     echo "⚠️  Demo data seeding completed with warnings. Check post-seeding command output above.\n";
+    echo "\n";
+    // Exit with error code for CI/CD pipelines
+    exit(1);
 }
-echo "\n";

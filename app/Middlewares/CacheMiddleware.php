@@ -96,15 +96,25 @@ class CacheMiddleware implements MiddlewareInterface
     {
         $maxAge = $this->settings->get('performance.media_cache_max_age', 86400); // 1 day default
 
-        // Use ETag for validation
-        $body = (string) $response->getBody();
-        $etag = '"' . md5($body) . '"';
-
-        return $response
+        // Don't compute ETag here - it would require reading entire body into memory
+        // MediaController already sets ETag based on file stats (mtime + size)
+        // which is much more efficient than MD5 hashing the entire response
+        $result = $response
             ->withHeader('Cache-Control', "public, max-age={$maxAge}")
             ->withHeader('Expires', gmdate('D, d M Y H:i:s', time() + $maxAge) . ' GMT')
-            ->withHeader('ETag', $etag)
             ->withHeader('Pragma', 'public');
+
+        // Only add ETag if not already set by controller
+        if (!$response->hasHeader('ETag')) {
+            // Use weak ETag based on content-length and last-modified if available
+            $contentLength = $response->getHeaderLine('Content-Length');
+            $lastModified = $response->getHeaderLine('Last-Modified');
+            if ($contentLength && $lastModified) {
+                $result = $result->withHeader('ETag', 'W/"' . md5($contentLength . $lastModified) . '"');
+            }
+        }
+
+        return $result;
     }
 
     private function addProtectedMediaCache(Response $response): Response

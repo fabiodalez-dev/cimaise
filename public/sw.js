@@ -7,7 +7,7 @@
  * - HTML: Network First (fresh content, fallback to cache if offline)
  */
 
-const CACHE_VERSION = 'cimaise-v1';
+const CACHE_VERSION = 'cimaise-v3';
 const CACHE_STATIC = `${CACHE_VERSION}-static`;
 const CACHE_IMAGES = `${CACHE_VERSION}-images`;
 const CACHE_PAGES = `${CACHE_VERSION}-pages`;
@@ -198,13 +198,18 @@ async function staleWhileRevalidateStrategy(request, cacheName) {
 /**
  * Network First Strategy - Best for HTML pages
  * Try network first, fallback to cache if offline
+ * Only shows offline.html for genuine network failures, not server errors
  */
 async function networkFirstStrategy(request, cacheName, maxItems = 20) {
   try {
-    // 1. Try network first
-    const networkResponse = await fetch(request);
+    // 1. Try network first with timeout (10 seconds)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    // 2. Cache successful responses
+    const networkResponse = await fetch(request, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    // 2. Cache successful responses (200 OK only)
     if (networkResponse && networkResponse.status === 200) {
       const cache = await caches.open(cacheName);
       const responseToCache = networkResponse.clone();
@@ -215,11 +220,24 @@ async function networkFirstStrategy(request, cacheName, maxItems = 20) {
       cache.put(request, responseToCache);
     }
 
+    // 3. Return network response (even if error status like 404, 500)
+    // Don't show offline page for server errors
     return networkResponse;
 
   } catch (error) {
-    // 3. Network failed, try cache
-    log('[SW] Network failed, trying cache:', request.url);
+    // 4. Only for genuine network failures (offline, timeout, DNS failure)
+    // NOT for server errors (those are returned above)
+
+    // Check if it's an abort (timeout) or actual network failure
+    const isOffline = !navigator.onLine;
+    const isNetworkError = error instanceof TypeError || error.name === 'AbortError';
+
+    if (!isOffline && !isNetworkError) {
+      // Unknown error, rethrow
+      throw error;
+    }
+
+    log('[SW] Network unavailable, trying cache:', request.url);
     const cache = await caches.open(cacheName);
     const cachedResponse = await cache.match(request);
 
@@ -227,11 +245,13 @@ async function networkFirstStrategy(request, cacheName, maxItems = 20) {
       return cachedResponse;
     }
 
-    // 4. No cache available, show offline page
-    const staticCache = await caches.open(CACHE_STATIC);
-    const offlinePage = await staticCache.match('/offline.html');
-    if (offlinePage) {
-      return offlinePage;
+    // 5. No cache available AND offline, show offline page
+    if (isOffline || isNetworkError) {
+      const staticCache = await caches.open(CACHE_STATIC);
+      const offlinePage = await staticCache.match('/offline.html');
+      if (offlinePage) {
+        return offlinePage;
+      }
     }
 
     throw error;

@@ -819,7 +819,8 @@ class AlbumsController extends BaseController
             }
 
             // Handle blur variant generation when protection status changes (NSFW or password)
-            $newHasPassword = $passwordRaw !== '' || (!$clearPassword && $oldHasPassword);
+            // Logic: clearPassword takes precedence - if set, password is cleared regardless of passwordRaw
+            $newHasPassword = !$clearPassword && ($passwordRaw !== '' || $oldHasPassword);
             $isProtected = $is_nsfw === 1 || $newHasPassword;
 
             if ($wasProtected !== $isProtected) {
