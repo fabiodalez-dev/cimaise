@@ -83,7 +83,7 @@ Customize fonts for your portfolio with live preview. Choose from curated font p
 
 <img src="screenshot/Lightbox.jpg" alt="Lightbox" width="800">
 
-Full-screen image viewing with smooth animations. Caption and equipment metadata displayed below (camera, lens, category). Dot navigation shows position in gallery. Keyboard navigation, zoom controls, and share buttons. Clean minimal UI that doesn't distract from your images.
+Full-screen image viewing with instant navigation. Caption and equipment metadata displayed below (camera, lens, category). Dot navigation shows position in gallery. Keyboard navigation, zoom controls, and share buttons. Clean minimal UI that doesn't distract from your images. Performance-optimized with disabled animations for instant image switching.
 
 ### EXIF Data Display
 
@@ -129,7 +129,7 @@ Create and organize your albums with drag-and-drop reordering. Each row shows co
 
 <img src="screenshot/media page.jpg" alt="Media Library" width="800">
 
-Visual grid of all uploaded images with batch selection. Right panel shows photo metadata—assign camera (Hasselblad 500C/M shown), lens, film stock, developer, lab, location, and custom fields. Bulk upload 100+ images at once. Click any image to edit its metadata or view in lightbox.
+Visual grid of all uploaded images with batch selection and pagination. Right panel shows photo metadata—assign camera (Hasselblad 500C/M shown), lens, film stock, developer, lab, location, and custom fields. Bulk upload 100+ images at once. Click any image to edit its metadata or view in lightbox. Handles large libraries with thousands of images through efficient server-side pagination.
 
 ### Translation Management
 
@@ -491,6 +491,10 @@ Visitors can combine filters: "Show me all medium-format Portra 400 shots from 2
 
 Every filter combination creates a unique URL. Share `yoursite.com/galleries?film=portra-400&year=2024` and recipients see exactly that filtered view.
 
+### Smart Category Counts
+
+Navigation menus show accurate album counts per category. Protected albums (NSFW or password-protected) are automatically excluded from these counts for non-authenticated visitors—no spoilers about hidden content.
+
 ---
 
 ## Automatic Image Optimization
@@ -727,6 +731,8 @@ Install Cimaise as an app on any device:
 - **Web App Manifest** — Customizable theme colors and icons
 - **Offline Page** — Graceful fallback when connection is lost
 - **Add to Home Screen** — Works like a native app on mobile
+- **Web Share API** — Native sharing on mobile devices (share images directly to other apps)
+- **Wake Lock API** — Keeps screen awake during lightbox slideshows
 
 PWA features are configured from Admin → Settings:
 - Theme color (affects browser chrome and splash screen)
@@ -740,6 +746,12 @@ PWA features are configured from Admin → Settings:
 - **Critical CSS** — Above-fold styles load first
 - **Deferred Scripts** — Non-critical JavaScript loads after page render
 - **Image Priority** — First image loads with `fetchpriority="high"`
+
+### Database Query Optimization
+
+- **Batch Album Enrichment** — Equipment, categories, and tags loaded in single queries instead of N+1
+- **Settings Cache** — Configuration values cached with automatic invalidation
+- **Efficient Pagination** — Server-side pagination for media library and galleries
 
 ### Installer Configuration
 
@@ -901,6 +913,30 @@ bash bin/dev/clean_for_reinstall.sh --force
 - Cache, logs, and temp files
 
 After running, navigate to `/install` to set up a fresh installation.
+
+### Demo Site Sync
+
+Maintain a synchronized demo site for showcasing Cimaise:
+
+```bash
+# Full sync from main app to demo folder
+php bin/sync-demo.php
+
+# Preview changes without applying
+php bin/sync-demo.php --dry-run
+```
+
+The sync script:
+- Copies all application code to `/demo/` folder
+- Applies demo-specific patches (template switcher, demo banner, password protection)
+- Preserves demo-only files (database, media, configuration)
+- Injects demo mode detection (`DEMO_MODE` constant)
+
+Demo features:
+- **Template Switcher** — Visitors can switch between all 6 home templates via dropdown
+- **Demo Banner** — Shows demo credentials in admin panel
+- **Password Change Block** — Prevents users from locking themselves out
+- **24-Hour Reset** — Cron script resets demo to clean state daily
 
 ---
 
