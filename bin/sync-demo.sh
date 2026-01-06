@@ -61,14 +61,6 @@ SYNC_FILES=(
     "postcss.config.js"
 )
 
-# Demo-specific files to preserve (never overwrite from main app)
-DEMO_PRESERVE=(
-    "demo/app/Views/frontend/_demo_template_menu.twig"
-    "demo/.env"
-    "demo/database/database.sqlite"
-    "demo/public/media"
-    "demo/storage/originals"
-)
 
 # ==============================================================================
 # SYNC FUNCTIONS
@@ -209,7 +201,7 @@ patch_page_controller() {
 
     # Add template override logic after home template is fetched
     local template_override='
-        / DEMO MODE: Allow template override via ?template= query parameter
+        // DEMO MODE: Allow template override via ?template= query parameter
         $templateOverride = $request->getQueryParams()['\''template'\''] ?? null;
         $validTemplates = ['\''classic'\'', '\''modern'\'', '\''parallax'\'', '\''masonry'\'', '\''snap'\'', '\''gallery'\''];
         if ($templateOverride && in_array($templateOverride, $validTemplates, true)) {

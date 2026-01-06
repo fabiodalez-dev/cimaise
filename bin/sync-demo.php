@@ -272,7 +272,7 @@ function patchPageController(string $demoRoot, bool $dryRun): void {
     // Add template override logic
     $templateOverride = <<<'PHP'
 
-        / DEMO MODE: Allow template override via ?template= query parameter
+        // DEMO MODE: Allow template override via ?template= query parameter
         $templateOverride = $request->getQueryParams()['template'] ?? null;
         $validTemplates = ['classic', 'modern', 'parallax', 'masonry', 'snap', 'gallery'];
         if ($templateOverride && in_array($templateOverride, $validTemplates, true)) {
