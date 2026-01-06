@@ -42,8 +42,8 @@ class ImagesGenerateVariantsCommand extends Command
 
         try {
             $pdo = $this->db->pdo();
-            $settings = new SettingsService($this->db);
-            $settings->clearCache();
+            // Clear static settings cache to ensure fresh values for UploadService
+            (new SettingsService($this->db))->clearCache();
 
             // Build query to get images needing variants
             $query = 'SELECT id, album_id FROM images WHERE 1=1';

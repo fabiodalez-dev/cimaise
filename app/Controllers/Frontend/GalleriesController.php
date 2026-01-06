@@ -422,11 +422,11 @@ class GalleriesController extends BaseController
         if (file_exists($cacheFile)) {
             $cacheData = @file_get_contents($cacheFile);
             if ($cacheData !== false) {
-                // Try JSON first (secure), fallback to unserialize for legacy cache
+                // Legacy cache migration ended 2025-12-15: do not accept non-JSON data.
                 $cache = @json_decode($cacheData, true);
                 if (!is_array($cache)) {
-                    // Legacy serialized cache - will be replaced on next write
-                    $cache = @unserialize($cacheData);
+                    @unlink($cacheFile);
+                    $cache = [];
                 }
                 if (is_array($cache) && isset($cache['expires'], $cache['data']) && $cache['expires'] > time()) {
                     return $cache['data'];
