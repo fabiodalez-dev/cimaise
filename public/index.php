@@ -25,18 +25,49 @@ $isAdminRoute = strpos($requestUri, '/admin') !== false;
 $isLoginRoute = strpos($requestUri, '/login') !== false;
 
 // Check if already installed (for all routes except installer itself)
+// PERFORMANCE: Use file-based marker first (fast), only fall back to full check if needed
 if (!$isInstallerRoute) {
     $root = dirname(__DIR__);
+    $installedMarker = $root . '/storage/tmp/.installed';
     $installed = false;
 
-    // Check installation status via Installer class
-    // Note: Installer::isInstalled() already checks for .env internally
-    try {
-        $installer = new \App\Installer\Installer($root);
-        $installed = $installer->isInstalled();
-    } catch (\Throwable $e) {
-        // If there's an error, we assume it's not installed
-        $installed = false;
+    // Fast path: check for installed marker file AND .env existence + validity
+    // Both must exist - if .env is removed or empty, marker is stale and should be cleared
+    $envFile = $root . '/.env';
+    if (file_exists($installedMarker)) {
+        // Validate .env exists and is not empty (check for any content, not arbitrary size)
+        // Use @filesize to handle race condition where file could be deleted between checks
+        if (file_exists($envFile) && is_readable($envFile)) {
+            $size = @filesize($envFile);
+            if ($size !== false && $size > 0) {
+                $installed = true;
+            } else {
+                // Stale marker: .env is empty or unreadable
+                @unlink($installedMarker);
+            }
+        } else {
+            // Stale marker: .env was removed or corrupted after installation (e.g., reset)
+            @unlink($installedMarker);
+        }
+    } elseif (file_exists($envFile) && is_readable($envFile) && ($size = @filesize($envFile)) !== false && $size > 0) {
+        // Slow path: .env exists but no marker - verify installation properly
+        try {
+            $installer = new \App\Installer\Installer($root);
+            $installed = $installer->isInstalled();
+            // Create marker file for future fast checks
+            if ($installed) {
+                // Ensure storage/tmp directory exists before writing marker
+                $markerDir = dirname($installedMarker);
+                if (!is_dir($markerDir)) {
+                    @mkdir($markerDir, 0775, true);
+                }
+                if (is_dir($markerDir)) {
+                    @file_put_contents($installedMarker, date('Y-m-d H:i:s'), LOCK_EX);
+                }
+            }
+        } catch (\Throwable $e) {
+            $installed = false;
+        }
     }
 
     // If not installed, redirect to installer
@@ -103,16 +134,47 @@ try {
 }
 
 // Maintenance mode check - must be after session_start() and before routing
+// PERFORMANCE: Cache plugin active status to avoid database query on every request
 if ($container['db'] !== null && !$isInstallerRoute) {
     $maintenancePluginFile = __DIR__ . '/../plugins/maintenance-mode/plugin.php';
     if (file_exists($maintenancePluginFile)) {
-        // Check if plugin is active
         try {
-            $pluginCheckStmt = $container['db']->pdo()->prepare('SELECT is_active FROM plugin_status WHERE slug = ? AND is_installed = 1');
-            $pluginCheckStmt->execute(['maintenance-mode']);
-            $pluginStatus = $pluginCheckStmt->fetch(\PDO::FETCH_ASSOC);
+            // Check cached status first (30 second TTL - plugin state rarely changes)
+            $cacheFile = __DIR__ . '/../storage/tmp/maintenance_plugin_status.cache';
+            $isActive = null;
+            $cacheTtl = 30;
 
-            if ($pluginStatus && $pluginStatus['is_active']) {
+            if (file_exists($cacheFile)) {
+                $cached = @file_get_contents($cacheFile);
+                if ($cached !== false) {
+                    $data = @json_decode($cached, true);
+                    if (is_array($data) && isset($data['time'], $data['active']) && (time() - $data['time']) < $cacheTtl) {
+                        $isActive = (bool) $data['active'];
+                    }
+                }
+            }
+
+            // If not cached, query database and cache result
+            if ($isActive === null) {
+                $pluginCheckStmt = $container['db']->pdo()->prepare('SELECT is_active FROM plugin_status WHERE slug = ? AND is_installed = 1');
+                $pluginCheckStmt->execute(['maintenance-mode']);
+                $pluginStatus = $pluginCheckStmt->fetch(\PDO::FETCH_ASSOC);
+                $isActive = $pluginStatus && $pluginStatus['is_active'];
+                // Atomic write: ensure directory exists, write to temp file, then rename
+                $cacheDir = dirname($cacheFile);
+                if (!is_dir($cacheDir)) {
+                    @mkdir($cacheDir, 0775, true);
+                }
+                $payload = json_encode(['time' => time(), 'active' => (bool)$isActive]);
+                if ($payload !== false && is_dir($cacheDir)) {
+                    $tmpFile = $cacheFile . '.tmp';
+                    if (@file_put_contents($tmpFile, $payload, LOCK_EX) !== false) {
+                        @rename($tmpFile, $cacheFile);
+                    }
+                }
+            }
+
+            if ($isActive) {
                 require_once $maintenancePluginFile;
 
                 if (MaintenanceModePlugin::shouldShowMaintenancePage($container['db'])) {
@@ -149,7 +211,11 @@ $app->add(new CsrfMiddleware());
 $app->add(new FlashMiddleware());
 $app->add(new SecurityHeadersMiddleware());
 
-$twig = Twig::create(__DIR__ . '/../app/Views', ['cache' => false]);
+$twigCacheDir = __DIR__ . '/../storage/cache/twig';
+if (!is_dir($twigCacheDir)) {
+    @mkdir($twigCacheDir, 0755, true);
+}
+$twig = Twig::create(__DIR__ . '/../app/Views', ['cache' => $twigCacheDir]);
 
 // Add custom Twig extensions
 $twig->getEnvironment()->addExtension(new \App\Extensions\AnalyticsTwigExtension());
